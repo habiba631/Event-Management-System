@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Get in touch with the NexTicket team.">
+  <title>Contact Us — NexTicket</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-page="contact">
+
+  <nav class="navbar">
+    <div class="container">
+      <a href="../index.html" class="nav-logo">
+        <span class="logo-icon">🎪</span> NexTicket
+      </a>
+      <div class="nav-links">
+        <a href="../index.html">Home</a>
+        <a href="events.html">Events</a>
+        <a href="booking.html">My Bookings</a>
+        <a href="admin.html" id="adminNavLink" class="hidden">Admin</a>
+        <a href="about.html">About</a>
+        <a href="contact.html" class="active">Contact</a>
+      </div>
+      <div class="nav-right">
+        <div class="nav-search">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="navbarSearch" placeholder="Search...">
+        </div>
+        <button class="theme-toggle" aria-label="Toggle theme">🌙</button>
+        <div id="navAuthArea"></div>
+        <button class="hamburger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <h1>Contact Us</h1>
+    <p>We'd love to hear from you</p>
+  </div>
+
+  <section class="section">
+    <div class="container">
+      <div class="contact-grid">
+        <div>
+          <h2 class="section-title">Get In Touch</h2>
+          <p class="section-subtitle">Have a question or feedback? Reach out and we'll get back to you shortly.</p>
+          <div class="card contact-info-card fade-in">
+            <div class="contact-icon">📧</div>
+            <div>
+              <h4>Email</h4>
+              <p style="color:var(--text-secondary)">support@eventhub.com</p>
+            </div>
+          </div>
+          <div class="card contact-info-card fade-in">
+            <div class="contact-icon">📞</div>
+            <div>
+              <h4>Phone</h4>
+              <p style="color:var(--text-secondary)">+20 123 456 7890</p>
+            </div>
+          </div>
+          <div class="card contact-info-card fade-in">
+            <div class="contact-icon">📍</div>
+            <div>
+              <h4>Location</h4>
+              <p style="color:var(--text-secondary)">MIU Campus, Cairo, EG</p>
+            </div>
+          </div>
+        </div>
+        <div class="form-card">
+          <h2>Send a Message</h2>
+          <form id="contactForm">
+            <div class="form-group">
+              <label for="contactName">Your Name *</label>
+              <input id="contactName" type="text" placeholder="John Doe" required>
+              <span class="error-msg">Please enter your name</span>
+            </div>
+            <div class="form-group">
+              <label for="contactEmail">Email Address *</label>
+              <input id="contactEmail" type="email" placeholder="john@example.com" required>
+              <span class="error-msg">Please enter a valid email</span>
+            </div>
+            <div class="form-group">
+              <label for="contactSubject">Subject</label>
+              <input id="contactSubject" type="text" placeholder="How can we help?">
+            </div>
+            <div class="form-group">
+              <label for="contactMessage">Message *</label>
+              <textarea id="contactMessage" placeholder="Write your message here..." required></textarea>
+              <span class="error-msg">Please enter your message</span>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h3>🎪 NexTicket</h3>
+          <p>Your one-stop platform for discovering and managing unforgettable events.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <a href="../index.html">Home</a>
+          <a href="events.html">Events</a>
+          <a href="booking.html">My Bookings</a>
+        </div>
+        <div class="footer-col hidden" id="adminFooterCol">
+          <h4>Administration</h4>
+          <a href="admin.html">Overview</a>
+          <a href="admin.html?tab=activity">Site activity</a>
+          <a href="admin.html?tab=bookings">Bookings</a>
+          <a href="admin.html?tab=manage">Events</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="about.html">About Us</a>
+          <a href="contact.html">Contact</a>
+        </div>
+      </div>
+      <div class="footer-bottom">&copy; 2026 NexTicket. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script src="../js/app.js"></script>
+</body>
+</html>
