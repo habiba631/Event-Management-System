@@ -1,121 +1,118 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { Alert, Box, Container, CssBaseline, ThemeProvider, Typography } from '@mui/material'
+import Navbar from './components/layout/Navbar'
+import HeroPage from './pages/HeroPage'
+import ContactInfoPage from './pages/ContactInfoPage'
+import AuthPage from './pages/AuthPage'
+import EventsPage from './pages/EventsPage'
+import CustomerDashboardPage from './pages/CustomerDashboardPage'
+import OrganizerDashboardPage from './pages/OrganizerDashboardPage'
+import AdminDashboardPage from './pages/AdminDashboardPage'
+import { createAppTheme } from './theme/appTheme'
+
+const theme = createAppTheme()
+
+const protectedRoutes = {
+  customer: 'customer',
+  organizer: 'organizer',
+  admin: 'admin',
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [activePage, setActivePage] = useState('hero')
+  const [currentUser, setCurrentUser] = useState(null)
+
+  const handleNavigate = (pageKey) => {
+    if (pageKey === 'dashboard') {
+      if (!currentUser) {
+        setActivePage('auth')
+        return
+      }
+      setActivePage(currentUser.role)
+      return
+    }
+
+    const requiredRole = protectedRoutes[pageKey]
+    if (!requiredRole) {
+      setActivePage(pageKey)
+      return
+    }
+
+    if (!currentUser) {
+      setActivePage('auth')
+      return
+    }
+
+    setActivePage(pageKey)
+  }
+
+  const renderProtectedPage = (requiredRole, pageComponent) => {
+    if (!currentUser) {
+      return (
+        <Alert severity="info">
+          Please login first. This dashboard is visible only to {requiredRole} users.
+        </Alert>
+      )
+    }
+
+    if (currentUser.role !== requiredRole) {
+      return (
+        <Alert severity="error">
+          You are logged in as {currentUser.role}. This section is only for {requiredRole} users.
+        </Alert>
+      )
+    }
+
+    return pageComponent
+  }
+
+  const pages = {
+    hero: <HeroPage onNavigate={handleNavigate} />,
+    contact: <ContactInfoPage />,
+    auth: (
+      <AuthPage
+        currentUser={currentUser}
+        onLogin={(user) => {
+          setCurrentUser(user)
+          setActivePage(user.role)
+        }}
+        onLogout={() => {
+          setCurrentUser(null)
+          setActivePage('hero')
+        }}
+      />
+    ),
+    events: <EventsPage />,
+    customer: renderProtectedPage('customer', <CustomerDashboardPage currentUser={currentUser} />),
+    organizer: renderProtectedPage('organizer', <OrganizerDashboardPage currentUser={currentUser} />),
+    admin: renderProtectedPage('admin', <AdminDashboardPage currentUser={currentUser} />),
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Box
+          sx={{
+            borderBottom: '1px solid rgba(148, 163, 184, 0.22)',
+            bgcolor: 'rgba(255,255,255,0.82)',
+            backdropFilter: 'blur(10px)',
+            position: 'sticky',
+            top: 0,
+            zIndex: 1100,
+          }}
         >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+          <Container maxWidth="lg" disableGutters={false}>
+            <Navbar activePage={activePage} onNavigate={handleNavigate} currentUser={currentUser} />
+          </Container>
+        </Box>
+        <Box component="main" sx={{ flex: 1, py: { xs: 3, md: 4 } }}>
+          <Container maxWidth="lg">
+            {pages[activePage] || <Typography variant="body1">Page not found.</Typography>}
+          </Container>
+        </Box>
+      </Box>
+    </ThemeProvider>
   )
 }
 
