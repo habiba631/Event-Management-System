@@ -2,8 +2,11 @@ import { createTheme } from '@mui/material/styles'
 
 const roleAvatarGradients = {
   customer: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+  Customer: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
   organizer: 'linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)',
+  EventOrganizer: 'linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)',
   admin: 'linear-gradient(135deg, #f43f5e 0%, #ec4899 100%)',
+  Admin: 'linear-gradient(135deg, #f43f5e 0%, #ec4899 100%)',
 }
 
 export function createAppTheme() {

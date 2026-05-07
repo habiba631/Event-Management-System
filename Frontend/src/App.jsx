@@ -13,9 +13,15 @@ import { createAppTheme } from './theme/appTheme'
 const theme = createAppTheme()
 
 const protectedRoutes = {
-  customer: 'customer',
-  organizer: 'organizer',
-  admin: 'admin',
+  customer: 'Customer',
+  organizer: 'EventOrganizer',
+  admin: 'Admin',
+}
+
+const roleToPage = {
+  Customer: 'customer',
+  EventOrganizer: 'organizer',
+  Admin: 'admin',
 }
 
 function App() {
@@ -28,7 +34,7 @@ function App() {
         setActivePage('auth')
         return
       }
-      setActivePage(currentUser.role)
+      setActivePage(roleToPage[currentUser.role] || 'hero')
       return
     }
 
@@ -74,7 +80,7 @@ function App() {
         currentUser={currentUser}
         onLogin={(user) => {
           setCurrentUser(user)
-          setActivePage(user.role)
+          setActivePage(roleToPage[user.role] || 'hero')
         }}
         onLogout={() => {
           setCurrentUser(null)
@@ -83,9 +89,9 @@ function App() {
       />
     ),
     events: <EventsPage />,
-    customer: renderProtectedPage('customer', <CustomerDashboardPage currentUser={currentUser} />),
-    organizer: renderProtectedPage('organizer', <OrganizerDashboardPage currentUser={currentUser} />),
-    admin: renderProtectedPage('admin', <AdminDashboardPage currentUser={currentUser} />),
+    customer: renderProtectedPage('Customer', <CustomerDashboardPage currentUser={currentUser} />),
+    organizer: renderProtectedPage('EventOrganizer', <OrganizerDashboardPage currentUser={currentUser} />),
+    admin: renderProtectedPage('Admin', <AdminDashboardPage currentUser={currentUser} />),
   }
 
   return (

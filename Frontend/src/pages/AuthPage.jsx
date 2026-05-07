@@ -39,7 +39,7 @@ function AuthPage({ onLogin, currentUser, onLogout }) {
                 Login or register
               </Typography>
               <Typography color="text.secondary">
-                One profile for guests, hosts, and admins — demo accounts live in sample data.
+                One profile for guests, hosts, and admins.
               </Typography>
               <AuthSwitcher onLogin={onLogin} currentUser={currentUser} />
               {currentUser && (

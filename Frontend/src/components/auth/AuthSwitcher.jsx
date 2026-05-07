@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
+  CircularProgress,
   MenuItem,
   Stack,
   TextField,
@@ -12,33 +14,89 @@ import {
   Typography,
 } from '@mui/material'
 import { SITE_NAME } from '../../config/site'
-import { users } from '../../data/sampleData'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 
 function AuthSwitcher({ onLogin, currentUser }) {
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [role, setRole] = useState('customer')
+  const [username, setUsername] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [birthDate, setBirthDate] = useState('')
+  const [city, setCity] = useState('')
+  const [role, setRole] = useState('Customer')
+  const [companyName, setCompanyName] = useState('')
+  const [companyAddress, setCompanyAddress] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const isLogin = mode === 'login'
+  const isOrganizer = role === 'EventOrganizer'
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
+    setErrorMessage('')
+    setIsLoading(true)
 
-    if (isLogin) {
-      const foundUser = users.find((user) => user.email === email)
-      if (foundUser) {
-        onLogin(foundUser)
+    try {
+      if (isLogin) {
+        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        })
+
+        const data = await response.json()
+        if (!response.ok) {
+          throw new Error(data.message || 'Login failed')
+        }
+
+        onLogin({
+          ...data.user,
+          name: `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || data.user.username,
+        })
+        return
       }
-      return
-    }
 
-    onLogin({
-      id: 'mock-new',
-      name: fullName || 'New User',
-      role,
-      email: email || 'newuser@email.com',
-    })
+      const payload = {
+        username,
+        firstName,
+        lastName,
+        birthDate: birthDate || undefined,
+        email,
+        password,
+        city,
+        role,
+      }
+
+      if (isOrganizer) {
+        payload.organizerProfile = {
+          companyName,
+          companyAddress,
+        }
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message || 'Signup failed')
+      }
+
+      onLogin({
+        ...data.user,
+        name: `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || data.user.username,
+      })
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -56,7 +114,7 @@ function AuthSwitcher({ onLogin, currentUser }) {
             {SITE_NAME} access
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Secure sign-in for guests and hosts across Egypt (demo mode).
+            Secure sign-in for guests and hosts across Egypt.
           </Typography>
           {currentUser && (
             <Typography color="secondary.main" fontWeight={600}>
@@ -74,13 +132,38 @@ function AuthSwitcher({ onLogin, currentUser }) {
           </ToggleButtonGroup>
 
           <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 1.5 }}>
+            {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
             {!isLogin && (
-              <TextField
-                label="Full name"
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
-                required
-              />
+              <>
+                <TextField
+                  label="Username"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  required
+                />
+                <TextField
+                  label="First name"
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
+                />
+                <TextField
+                  label="Last name"
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
+                />
+                <TextField
+                  label="Birth date"
+                  type="date"
+                  value={birthDate}
+                  onChange={(event) => setBirthDate(event.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  label="City"
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                />
+              </>
             )}
             <TextField
               label="Email address"
@@ -103,13 +186,29 @@ function AuthSwitcher({ onLogin, currentUser }) {
                 value={role}
                 onChange={(event) => setRole(event.target.value)}
               >
-                <MenuItem value="customer">Customer</MenuItem>
-                <MenuItem value="organizer">Event Organizer</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
+                <MenuItem value="Customer">Customer</MenuItem>
+                <MenuItem value="EventOrganizer">Event Organizer</MenuItem>
+                <MenuItem value="Admin">Admin</MenuItem>
               </TextField>
             )}
-            <Button type="submit" variant="contained">
-              {isLogin ? 'Login' : 'Create Account'}
+            {!isLogin && isOrganizer && (
+              <>
+                <TextField
+                  label="Company name"
+                  value={companyName}
+                  onChange={(event) => setCompanyName(event.target.value)}
+                  required
+                />
+                <TextField
+                  label="Company address"
+                  value={companyAddress}
+                  onChange={(event) => setCompanyAddress(event.target.value)}
+                  required
+                />
+              </>
+            )}
+            <Button type="submit" variant="contained" disabled={isLoading}>
+              {isLoading ? <CircularProgress size={20} color="inherit" /> : isLogin ? 'Login' : 'Create Account'}
             </Button>
           </Box>
         </Stack>
@@ -117,5 +216,4 @@ function AuthSwitcher({ onLogin, currentUser }) {
     </Card>
   )
 }
-
 export default AuthSwitcher
