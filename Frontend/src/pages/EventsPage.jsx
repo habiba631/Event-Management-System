@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, Box, Chip, CircularProgress, Grid, Stack, TextField, Typography } from '@mui/material'
 import RegisterEventCard from '../components/cards/RegisterEventCard'
 import ScrollRevealSection from '../components/layout/ScrollRevealSection'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+import { API_BASE_URL } from '../config/api'
 
 function mapEventForListing(doc) {
   const id = doc._id != null ? String(doc._id) : String(doc.id)
@@ -24,49 +23,78 @@ function mapEventForListing(doc) {
   }
 }
 
-function EventsPage() {
+function EventsPage({ currentUser, onNavigate }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [bookedByEventId, setBookedByEventId] = useState(() => new Map())
+
+  const userId = currentUser?._id != null ? String(currentUser._id) : ''
+
+  const loadEvents = useCallback(async () => {
+    setLoading(true)
+    setLoadError('')
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/events`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to load events')
+      }
+
+      const list = Array.isArray(data) ? data : []
+      setEvents(list.map(mapEventForListing))
+    } catch (err) {
+      setLoadError(err.message)
+      setEvents([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const loadMyBookings = useCallback(async () => {
+    if (!userId) {
+      setBookedByEventId(new Map())
+      return
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/bookings?user=${encodeURIComponent(userId)}`)
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to load bookings')
+      }
+      const list = Array.isArray(data) ? data : []
+      const next = new Map()
+      for (const b of list) {
+        const evId = b.event?._id != null ? String(b.event._id) : b.event != null ? String(b.event) : ''
+        if (evId) {
+          next.set(evId, b)
+        }
+      }
+      setBookedByEventId(next)
+    } catch {
+      setBookedByEventId(new Map())
+    }
+  }, [userId])
 
   useEffect(() => {
     let cancelled = false
 
     async function load() {
-      setLoading(true)
-      setLoadError('')
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/events`)
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Failed to load events')
-        }
-
-        const list = Array.isArray(data) ? data : []
-        if (!cancelled) {
-          setEvents(list.map(mapEventForListing))
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setLoadError(err.message)
-          setEvents([])
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      }
+      await loadEvents()
+      if (cancelled) return
+      await loadMyBookings()
     }
 
     load()
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [loadEvents, loadMyBookings])
 
   const categories = useMemo(() => {
     const set = new Set(events.map((e) => e.category).filter(Boolean))
@@ -155,7 +183,16 @@ function EventsPage() {
           <Grid container spacing={2.5}>
             {filtered.map((event) => (
               <Grid key={event.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                <RegisterEventCard event={event} />
+                <RegisterEventCard
+                  event={event}
+                  currentUser={currentUser}
+                  onNavigate={onNavigate}
+                  existingBooking={bookedByEventId.get(event.id) || null}
+                  onBooked={async () => {
+                    await loadEvents()
+                    await loadMyBookings()
+                  }}
+                />
               </Grid>
             ))}
           </Grid>

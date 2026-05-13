@@ -88,7 +88,7 @@ function App() {
         }}
       />
     ),
-    events: <EventsPage />,
+    events: <EventsPage currentUser={currentUser} onNavigate={handleNavigate} />,
     customer: renderProtectedPage('Customer', <CustomerDashboardPage currentUser={currentUser} />),
     organizer: renderProtectedPage('EventOrganizer', <OrganizerDashboardPage currentUser={currentUser} />),
     admin: renderProtectedPage('Admin', <AdminDashboardPage currentUser={currentUser} />),
