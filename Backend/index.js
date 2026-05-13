@@ -1,9 +1,10 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
 const connectDB = require("./config/db");
 const userRoutes = require("./routes/UserRoutes");
 const authRoutes = require("./routes/AuthRoutes");
+const eventRoutes = require("./routes/EventRoutes");
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/events", eventRoutes);
 
 function healthcheck(req, res) {
   let email = req.body.email;
