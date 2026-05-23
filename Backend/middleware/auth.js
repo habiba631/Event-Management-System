@@ -2,14 +2,19 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 async function protect(req, res, next) {
-  const authHeader = req.headers.authorization;
+  // Session-based auth
+  if (req.session && req.session.userId) {
+    req.user = await User.findById(req.session.userId);
+    if (req.user) return next();
+  }
 
+  // JWT-based auth
+  const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "No token provided" });
+    return res.status(401).json({ message: "Not authenticated" });
   }
 
   const token = authHeader.split(" ")[1];
-
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = await User.findById(decoded.id);

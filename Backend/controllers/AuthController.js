@@ -44,6 +44,8 @@ async function signup(req, res) {
 
     const token = signToken(user._id);
 
+    req.session.userId = user._id.toString();
+
     return res.status(201).json({
       message: "Signup successful",
       token,
@@ -66,6 +68,8 @@ async function login(req, res) {
 
     const token = signToken(user._id);
 
+    req.session.userId = user._id.toString();
+
     return res.status(200).json({
       message: "Login successful",
       token,
@@ -76,7 +80,18 @@ async function login(req, res) {
   }
 }
 
+async function logout(req, res) {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ message: "Logout failed" });
+    }
+    res.clearCookie("connect.sid");
+    return res.status(200).json({ message: "Logged out successfully" });
+  });
+}
+
 module.exports = {
   signup,
   login,
+  logout,
 };
