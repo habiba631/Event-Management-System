@@ -6,8 +6,11 @@ const {
   updateBooking,
   deleteBooking,
 } = require("../controllers/BookingController");
+const { protect } = require("../middleware/auth");
 
 const router = express.Router();
+
+router.use(protect);
 
 router.post("/", createBooking);
 router.get("/", getAllBookings);

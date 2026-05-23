@@ -1,4 +1,10 @@
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+
+function signToken(id) {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+}
 
 async function signup(req, res) {
   try {
@@ -19,13 +25,15 @@ async function signup(req, res) {
       return res.status(409).json({ message: "Email or username already exists" });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     const user = await User.create({
       username,
       firstName,
       lastName,
       birthDate,
       email,
-      password,
+      password: hashedPassword,
       gender,
       city,
       country,
@@ -34,9 +42,12 @@ async function signup(req, res) {
       organizerProfile,
     });
 
+    const token = signToken(user._id);
+
     return res.status(201).json({
       message: "Signup successful",
-      user: user,
+      token,
+      user: { ...user.toObject(), password: undefined },
     });
   } catch (error) {
     return res.status(400).json({ message: error.message });
@@ -49,13 +60,16 @@ async function login(req, res) {
 
     const user = await User.findOne({ email }).select("+password");
 
-    if (!user || user.password !== password) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    const token = signToken(user._id);
+
     return res.status(200).json({
       message: "Login successful",
-      user: user, 
+      token,
+      user: { ...user.toObject(), password: undefined },
     });
   } catch (error) {
     return res.status(400).json({ message: error.message });

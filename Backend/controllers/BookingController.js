@@ -1,6 +1,5 @@
 const Booking = require("../models/Booking");
 const Event = require("../models/Event");
-const User = require("../models/User");
 
 function isConfirmed(status) {
   return status === "confirmed";
@@ -15,21 +14,18 @@ async function adjustEventRegistrations(eventId, delta) {
 
 async function createBooking(req, res) {
   try {
-    const { user: userId, event: eventId, ticketCount = 1, status = "confirmed", notes = "" } =
-      req.body;
+    const { event: eventId, ticketCount = 1, status = "confirmed", notes = "" } = req.body;
 
-    if (!userId || !eventId) {
-      return res.status(400).json({ message: "user and event are required" });
+    if (!eventId) {
+      return res.status(400).json({ message: "event is required" });
     }
 
-    const [user, event] = await Promise.all([User.findById(userId), Event.findById(eventId)]);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
+
+    const userId = req.user._id;
 
     const existing = await Booking.findOne({ user: userId, event: eventId });
     if (existing) {
@@ -80,15 +76,14 @@ async function getAllBookings(req, res) {
     const { user: userId, event: eventId, status } = req.query;
     const filter = {};
 
-    if (userId) {
-      filter.user = userId;
+    if (req.user.role !== "Admin") {
+      filter.user = req.user._id;
+    } else {
+      if (userId) filter.user = userId;
     }
-    if (eventId) {
-      filter.event = eventId;
-    }
-    if (status) {
-      filter.status = status;
-    }
+
+    if (eventId) filter.event = eventId;
+    if (status) filter.status = status;
 
     const bookings = await Booking.find(filter)
       .populate("user", "-password")
@@ -110,6 +105,10 @@ async function getBookingById(req, res) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
+    if (req.user.role !== "Admin" && String(booking.user._id) !== String(req.user._id)) {
+      return res.status(403).json({ message: "You do not have permission to view this booking" });
+    }
+
     return res.status(200).json(booking);
   } catch (error) {
     return res.status(400).json({ message: error.message });
@@ -123,6 +122,10 @@ async function updateBooking(req, res) {
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (req.user.role !== "Admin" && String(booking.user) !== String(req.user._id)) {
+      return res.status(403).json({ message: "You can only update your own bookings" });
     }
 
     const { status, notes } = req.body;
@@ -180,6 +183,10 @@ async function deleteBooking(req, res) {
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (req.user.role !== "Admin" && String(booking.user) !== String(req.user._id)) {
+      return res.status(403).json({ message: "You can only delete your own bookings" });
     }
 
     if (isConfirmed(booking.status)) {

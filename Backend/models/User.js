@@ -75,6 +75,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
       trim: true,
+      select: false,
     },
     phoneNumber: {
       type: String,
@@ -83,8 +84,8 @@ const userSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      enum: ["Male", "Female", "Other", "PreferNotToSay"],
-      default: "PreferNotToSay",
+      enum: ["Male", "Female"],
+      default: "Female",
     },
     city: {
       type: String,
