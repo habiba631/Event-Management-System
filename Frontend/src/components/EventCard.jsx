@@ -65,6 +65,9 @@ export default function EventCard({ event, onBook, onEdit }) {
         <div className="event-card-badges">
           <span className={`badge badge-purple`}>{event.category}</span>
           <span className={`badge ${status.cls}`}>{status.label}</span>
+          <span className={`badge ${(event.price ?? 0) === 0 ? 'badge-green' : 'badge-amber'}`}>
+            {(event.price ?? 0) === 0 ? 'Free' : `EGP ${(event.price / 100).toFixed(2)}`}
+          </span>
         </div>
 
         <h3 className="event-card-title">{event.title}</h3>

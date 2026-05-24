@@ -14,6 +14,8 @@ import OrganizerProfile from './pages/OrganizerProfile';
 import CreateEvent from './pages/CreateEvent';
 import MyEvents from './pages/MyEvents';
 import Attendees from './pages/Attendees';
+import BookingSuccess from './pages/BookingSuccess';
+import BookingCancel from './pages/BookingCancel';
 
 export default function App() {
   return (
@@ -55,6 +57,17 @@ export default function App() {
               <Route path="/organizer/attendees" element={
                 <ProtectedRoute roles={['EventOrganizer', 'Admin']}>
                   <Attendees />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/booking/success" element={
+                <ProtectedRoute roles={['Customer']}>
+                  <BookingSuccess />
+                </ProtectedRoute>
+              } />
+              <Route path="/booking/cancel" element={
+                <ProtectedRoute roles={['Customer']}>
+                  <BookingCancel />
                 </ProtectedRoute>
               } />
 

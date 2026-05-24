@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { createBooking } from '../api/bookings';
+import { createCheckoutSession } from '../api/payments';
 import { useToast } from './Toast';
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
   return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function formatPrice(cents) {
+  return `EGP ${(cents / 100).toFixed(2)}`;
 }
 
 export default function BookingModal({ event, onClose, onSuccess }) {
@@ -14,18 +19,32 @@ export default function BookingModal({ event, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
 
   const seatsLeft = event.seatsLeft ?? Math.max(0, event.capacity - event.registrations);
+  const isPaid = (event.price ?? 0) > 0;
+  const totalCents = (event.price ?? 0) * ticketCount;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await createBooking({ event: event._id, ticketCount, notes });
-      success(`Booking confirmed! 🎉 ${ticketCount} ticket${ticketCount > 1 ? 's' : ''} for "${event.title}"`);
-      onSuccess?.(res.data);
-      onClose();
+      if (isPaid) {
+        const res = await createCheckoutSession({ eventId: event._id, ticketCount });
+        // Free path shouldn't happen here but handle gracefully
+        if (res.data.free) {
+          success(`Booking confirmed! ${ticketCount} ticket${ticketCount > 1 ? 's' : ''} for "${event.title}"`);
+          onSuccess?.(res.data);
+          onClose();
+        } else {
+          // Redirect to Stripe-hosted checkout page
+          window.location.href = res.data.url;
+        }
+      } else {
+        const res = await createBooking({ event: event._id, ticketCount, notes });
+        success(`Booking confirmed! ${ticketCount} ticket${ticketCount > 1 ? 's' : ''} for "${event.title}"`);
+        onSuccess?.(res.data);
+        onClose();
+      }
     } catch (err) {
       error(err.response?.data?.message || 'Booking failed. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
@@ -55,6 +74,12 @@ export default function BookingModal({ event, onClose, onSuccess }) {
                   {seatsLeft} seat{seatsLeft !== 1 ? 's' : ''} available
                 </span>
               </div>
+              <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span>💳</span>
+                <span style={{ fontWeight: 600, color: isPaid ? 'var(--c-text)' : 'var(--c-success)' }}>
+                  {isPaid ? `${formatPrice(event.price)} per ticket` : 'Free'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -77,23 +102,36 @@ export default function BookingModal({ event, onClose, onSuccess }) {
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Notes (optional)</label>
-              <textarea
-                className="form-input"
-                placeholder="Any special requests or notes..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-              />
-            </div>
+            {!isPaid && (
+              <div className="form-group">
+                <label className="form-label">Notes (optional)</label>
+                <textarea
+                  className="form-input"
+                  placeholder="Any special requests or notes..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            )}
+
+            {isPaid && (
+              <div style={{ padding: '0.75rem 1rem', background: 'var(--c-glass)', border: '1px solid var(--c-border)', borderRadius: 'var(--r)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--c-text2)' }}>Total</span>
+                <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{formatPrice(totalCents)}</span>
+              </div>
+            )}
           </form>
         </div>
 
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose} disabled={loading}>Cancel</button>
           <button form="booking-form" type="submit" className="btn btn-primary" disabled={loading || seatsLeft < 1}>
-            {loading ? <><span className="spinner spinner-sm" /> Booking…</> : `Confirm ${ticketCount} Ticket${ticketCount > 1 ? 's' : ''}`}
+            {loading
+              ? <><span className="spinner spinner-sm" /> {isPaid ? 'Redirecting…' : 'Booking…'}</>
+              : isPaid
+                ? `Pay ${formatPrice(totalCents)}`
+                : `Confirm ${ticketCount} Ticket${ticketCount > 1 ? 's' : ''}`}
           </button>
         </div>
       </div>

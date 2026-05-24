@@ -24,7 +24,7 @@ export default function CreateEvent() {
     title: '', description: '', category: '', startsAt: '', endsAt: '',
     location: '', city: '', country: '',
     organizer: user?.organizerProfile?.companyName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.username || '',
-    capacity: 50, status: 'draft', imageUrl: '',
+    capacity: 50, status: 'draft', imageUrl: '', price: '',
   });
 
   const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -36,6 +36,7 @@ export default function CreateEvent() {
       await createEvent({
         ...form,
         capacity: Number(form.capacity),
+        price: form.price !== '' ? Math.round(parseFloat(form.price) * 100) : 0,
         startsAt: new Date(form.startsAt).toISOString(),
         endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : undefined,
       });
@@ -136,6 +137,11 @@ export default function CreateEvent() {
                     <label className="form-label">Organizer display name *</label>
                     <input name="organizer" className="form-input" value={form.organizer} onChange={handleChange} required />
                   </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Ticket Price (USD)</label>
+                  <input type="number" name="price" className="form-input" placeholder="0.00 for free" value={form.price} onChange={handleChange} min="0" step="0.01" />
+                  <span className="form-hint">Leave empty or 0 for a free event</span>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Cover image URL (optional)</label>

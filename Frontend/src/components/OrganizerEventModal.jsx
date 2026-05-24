@@ -19,7 +19,7 @@ export default function OrganizerEventModal({ event, onClose, onUpdated, onDelet
   const [form, setForm] = useState({
     title: '', description: '', category: '', startsAt: '', endsAt: '',
     location: '', city: '', country: '', organizer: '', capacity: 1,
-    status: 'draft', imageUrl: '',
+    status: 'draft', imageUrl: '', price: '',
   });
 
   useEffect(() => {
@@ -37,6 +37,7 @@ export default function OrganizerEventModal({ event, onClose, onUpdated, onDelet
         capacity: event.capacity || 1,
         status: event.status || 'draft',
         imageUrl: event.imageUrl || '',
+        price: event.price ? (event.price / 100).toFixed(2) : '',
       });
     }
   }, [event]);
@@ -53,6 +54,7 @@ export default function OrganizerEventModal({ event, onClose, onUpdated, onDelet
       const res = await updateEvent(event._id, {
         ...form,
         capacity: Number(form.capacity),
+        price: form.price !== '' ? Math.round(parseFloat(form.price) * 100) : 0,
         startsAt: form.startsAt ? new Date(form.startsAt).toISOString() : undefined,
         endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : undefined,
       });
@@ -134,6 +136,10 @@ export default function OrganizerEventModal({ event, onClose, onUpdated, onDelet
                   <label className="form-label">Capacity *</label>
                   <input type="number" name="capacity" className="form-input" value={form.capacity} onChange={handleChange} min={1} required />
                 </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Ticket Price (USD)</label>
+                <input type="number" name="price" className="form-input" placeholder="0.00 for free" value={form.price} onChange={handleChange} min="0" step="0.01" />
               </div>
               <div className="form-group">
                 <label className="form-label">Image URL (optional)</label>

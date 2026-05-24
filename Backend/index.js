@@ -8,11 +8,13 @@ const userRoutes = require("./routes/UserRoutes");
 const authRoutes = require("./routes/AuthRoutes");
 const eventRoutes = require("./routes/EventRoutes");
 const bookingRoutes = require("./routes/BookingRoutes");
+const paymentRoutes = require("./routes/PaymentRoutes");
 
 const app = express();
 
 // Middleware
 app.use(cors({ origin: true, credentials: true }));
+
 app.use(express.json());
 app.use(
   session({
@@ -37,6 +39,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/payments", paymentRoutes);
 
 function healthcheck(req, res) {
   let email = req.body.email;
