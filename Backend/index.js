@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
-const MongoStore = require("connect-mongo");
+const { MongoStore } = require("connect-mongo");
 const connectDB = require("./config/db");
 const userRoutes = require("./routes/UserRoutes");
 const authRoutes = require("./routes/AuthRoutes");
@@ -16,7 +16,7 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(
   session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || "eventify-dev-secret-change-in-production",
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({

@@ -5,16 +5,17 @@ const {
   getUserById,
   updateUser,
   deleteUser,
+  updateSelf,
 } = require("../controllers/UserController");
 const { protect, restrictTo } = require("../middleware/auth");
 
 const router = express.Router();
-router.use(protect, restrictTo("Admin"));
+router.put("/me", protect, updateSelf);
 
-router.post("/", createUser);
-router.get("/", getAllUsers);
-router.get("/:id", getUserById);
-router.put("/:id", updateUser);
-router.delete("/:id", deleteUser);
+router.post("/", protect, restrictTo("Admin"), createUser);
+router.get("/", protect, restrictTo("Admin"), getAllUsers);
+router.get("/:id", protect, restrictTo("Admin"), getUserById);
+router.put("/:id", protect, restrictTo("Admin"), updateUser);
+router.delete("/:id", protect, restrictTo("Admin"), deleteUser);
 
 module.exports = router;

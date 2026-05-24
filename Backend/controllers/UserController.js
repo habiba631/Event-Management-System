@@ -66,10 +66,31 @@ async function deleteUser(req, res) {
   }
 }
 
+async function updateSelf(req, res) {
+  try {
+    const userId = req.user._id;
+    const { role, password, isActive, ...updates } = req.body;
+
+    const updated = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updated) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({ message: "Profile updated successfully", user: updated });
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+}
+
 module.exports = {
   createUser,
   getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
+  updateSelf,
 };

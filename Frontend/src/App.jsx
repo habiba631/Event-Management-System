@@ -1,125 +1,69 @@
-import { useState } from 'react'
-import { Alert, Box, Container, CssBaseline, ThemeProvider, Typography } from '@mui/material'
-import Navbar from './components/layout/Navbar'
-import HeroPage from './pages/HeroPage'
-import ContactInfoPage from './pages/ContactInfoPage'
-import AuthPage from './pages/AuthPage'
-import EventsPage from './pages/EventsPage'
-import CustomerDashboardPage from './pages/CustomerDashboardPage'
-import OrganizerDashboardPage from './pages/OrganizerDashboardPage'
-import AdminDashboardPage from './pages/AdminDashboardPage'
-import { createAppTheme } from './theme/appTheme'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import './App.css';
+import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './components/Toast';
+import ProtectedRoute from './components/ProtectedRoute';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Events from './pages/Events';
+import CustomerProfile from './pages/CustomerProfile';
+import OrganizerProfile from './pages/OrganizerProfile';
+import CreateEvent from './pages/CreateEvent';
+import MyEvents from './pages/MyEvents';
+import Attendees from './pages/Attendees';
 
-const theme = createAppTheme()
-
-const protectedRoutes = {
-  customer: 'Customer',
-  organizer: 'EventOrganizer',
-  admin: 'Admin',
-}
-
-const roleToPage = {
-  Customer: 'customer',
-  EventOrganizer: 'organizer',
-  Admin: 'admin',
-}
-
-function App() {
-  const [activePage, setActivePage] = useState('hero')
-  const [currentUser, setCurrentUser] = useState(null)
-
-  const handleNavigate = (pageKey) => {
-    if (pageKey === 'dashboard') {
-      if (!currentUser) {
-        setActivePage('auth')
-        return
-      }
-      setActivePage(roleToPage[currentUser.role] || 'hero')
-      return
-    }
-
-    const requiredRole = protectedRoutes[pageKey]
-    if (!requiredRole) {
-      setActivePage(pageKey)
-      return
-    }
-
-    if (!currentUser) {
-      setActivePage('auth')
-      return
-    }
-
-    setActivePage(pageKey)
-  }
-
-  const renderProtectedPage = (requiredRole, pageComponent) => {
-    if (!currentUser) {
-      return (
-        <Alert severity="info">
-          Please login first. This dashboard is visible only to {requiredRole} users.
-        </Alert>
-      )
-    }
-
-    if (currentUser.role !== requiredRole) {
-      return (
-        <Alert severity="error">
-          You are logged in as {currentUser.role}. This section is only for {requiredRole} users.
-        </Alert>
-      )
-    }
-
-    return pageComponent
-  }
-
-  const pages = {
-    hero: <HeroPage onNavigate={handleNavigate} />,
-    contact: <ContactInfoPage />,
-    auth: (
-      <AuthPage
-        currentUser={currentUser}
-        onLogin={(user) => {
-          setCurrentUser(user)
-          setActivePage(roleToPage[user.role] || 'hero')
-        }}
-        onLogout={() => {
-          setCurrentUser(null)
-          setActivePage('hero')
-        }}
-      />
-    ),
-    events: <EventsPage currentUser={currentUser} onNavigate={handleNavigate} />,
-    customer: renderProtectedPage('Customer', <CustomerDashboardPage currentUser={currentUser} />),
-    organizer: renderProtectedPage('EventOrganizer', <OrganizerDashboardPage currentUser={currentUser} />),
-    admin: renderProtectedPage('Admin', <AdminDashboardPage currentUser={currentUser} />),
-  }
-
+export default function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Box
-          sx={{
-            borderBottom: '1px solid rgba(148, 163, 184, 0.22)',
-            bgcolor: 'rgba(255,255,255,0.82)',
-            backdropFilter: 'blur(10px)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 1100,
-          }}
-        >
-          <Container maxWidth="lg" disableGutters={false}>
-            <Navbar activePage={activePage} onNavigate={handleNavigate} currentUser={currentUser} />
-          </Container>
-        </Box>
-        <Box component="main" sx={{ flex: 1, py: { xs: 3, md: 4 } }}>
-          <Container maxWidth="lg">
-            {pages[activePage] || <Typography variant="body1">Page not found.</Typography>}
-          </Container>
-        </Box>
-      </Box>
-    </ThemeProvider>
-  )
-}
+    <BrowserRouter>
+      <AuthProvider>
+        <ToastProvider>
+          <Navbar />
+          <main style={{ flex: 1 }}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/events" element={<Events />} />
 
-export default App
+              <Route path="/profile" element={
+                <ProtectedRoute roles={['Customer']}>
+                  <CustomerProfile />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/organizer/profile" element={
+                <ProtectedRoute roles={['EventOrganizer']}>
+                  <OrganizerProfile />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/organizer/create" element={
+                <ProtectedRoute roles={['EventOrganizer', 'Admin']}>
+                  <CreateEvent />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/organizer/my-events" element={
+                <ProtectedRoute roles={['EventOrganizer', 'Admin']}>
+                  <MyEvents />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/organizer/attendees" element={
+                <ProtectedRoute roles={['EventOrganizer', 'Admin']}>
+                  <Attendees />
+                </ProtectedRoute>
+              } />
+
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+          <Footer />
+        </ToastProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}

@@ -2,8 +2,10 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+const JWT_SECRET = process.env.JWT_SECRET || "eventify-jwt-secret-change-in-production";
+
 function signToken(id) {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ id }, JWT_SECRET, { expiresIn: "7d" });
 }
 
 async function signup(req, res) {
