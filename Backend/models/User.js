@@ -30,6 +30,11 @@ const organizerProfileSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    taxRegistry: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     isVerified: {
       type: Boolean,
       default: false,

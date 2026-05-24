@@ -9,6 +9,7 @@ const authRoutes = require("./routes/AuthRoutes");
 const eventRoutes = require("./routes/EventRoutes");
 const bookingRoutes = require("./routes/BookingRoutes");
 const paymentRoutes = require("./routes/PaymentRoutes");
+const fileRoutes = require("./routes/FileRoutes");
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/files", fileRoutes);
 
 function healthcheck(req, res) {
   let email = req.body.email;

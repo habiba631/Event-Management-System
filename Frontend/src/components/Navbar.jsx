@@ -3,11 +3,26 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from './Toast';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 function getInitials(user) {
   if (!user) return '?';
   const f = user.firstName?.[0] || '';
   const l = user.lastName?.[0] || '';
   return (f + l).toUpperCase() || user.username?.[0]?.toUpperCase() || '?';
+}
+
+function NavAvatar({ user }) {
+  if (user?.profileImage) {
+    return (
+      <img
+        src={`${API_BASE}/files/profile-pictures/${user.profileImage}`}
+        alt="avatar"
+        style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
+      />
+    );
+  }
+  return <div className="navbar-avatar">{getInitials(user)}</div>;
 }
 
 export default function Navbar() {
@@ -80,7 +95,7 @@ export default function Navbar() {
                   className="navbar-user-btn"
                   onClick={() => setDropdownOpen((v) => !v)}
                 >
-                  <div className="navbar-avatar">{getInitials(user)}</div>
+                  <NavAvatar user={user} />
                   <span>{user.firstName || user.username}</span>
                   <span style={{ fontSize: '0.7rem', color: 'var(--c-text3)' }}>▾</span>
                 </button>

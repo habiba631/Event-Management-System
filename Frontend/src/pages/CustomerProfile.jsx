@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
-import { updateSelf } from '../api/users';
+import { updateSelf, uploadProfilePicture as apiUploadProfilePicture } from '../api/users';
 import { getAllBookings, deleteBooking } from '../api/bookings';
 import { useEffect } from 'react';
 
 const TAGS = ['Music', 'Sports', 'Technology', 'Arts', 'Food', 'Business', 'Health', 'Education'];
+
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
+
+function getProfilePictureUrl(profileImage) {
+  if (!profileImage) return null;
+  return `${API_BASE}/files/profile-pictures/${profileImage}`;
+}
 
 function getInitials(user) {
   const f = user?.firstName?.[0] || '';
@@ -25,6 +32,11 @@ export default function CustomerProfile() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
+
+  const [picturePreview, setPicturePreview] = useState(null);
+  const [pictureFile, setPictureFile] = useState(null);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const pictureInputRef = useRef(null);
 
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
@@ -58,6 +70,29 @@ export default function CustomerProfile() {
     }));
   };
 
+  const handlePictureChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPictureFile(file);
+    setPicturePreview(URL.createObjectURL(file));
+  };
+
+  const handlePictureUpload = async () => {
+    if (!pictureFile) return;
+    setUploadingPicture(true);
+    try {
+      const res = await apiUploadProfilePicture(pictureFile);
+      updateUserData(res.data.user);
+      setPictureFile(null);
+      setPicturePreview(null);
+      success('Profile picture updated!');
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to upload picture.');
+    } finally {
+      setUploadingPicture(false);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -86,15 +121,59 @@ export default function CustomerProfile() {
     }
   };
 
+  const profilePictureUrl = getProfilePictureUrl(user?.profileImage);
+
   return (
     <div className="page">
       <div className="container">
         <div className="profile-layout">
           {/* Sidebar */}
           <aside className="profile-sidebar animate-fadeInLeft">
-            <div className="profile-avatar-wrap">
-              <div className="profile-avatar">{getInitials(user)}</div>
+            <div className="profile-avatar-wrap" style={{ position: 'relative' }}>
+              {picturePreview || profilePictureUrl ? (
+                <img
+                  src={picturePreview || profilePictureUrl}
+                  alt="Profile"
+                  style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--c-border)' }}
+                />
+              ) : (
+                <div className="profile-avatar">{getInitials(user)}</div>
+              )}
+              <button
+                type="button"
+                onClick={() => pictureInputRef.current?.click()}
+                style={{
+                  position: 'absolute', bottom: 0, right: 0,
+                  background: 'var(--c-purple-500)', border: 'none', borderRadius: '50%',
+                  width: '26px', height: '26px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.75rem', color: '#fff',
+                }}
+                title="Change photo"
+              >
+                ✎
+              </button>
+              <input
+                ref={pictureInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handlePictureChange}
+              />
             </div>
+
+            {pictureFile && (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                style={{ marginTop: '0.5rem', width: '100%' }}
+                onClick={handlePictureUpload}
+                disabled={uploadingPicture}
+              >
+                {uploadingPicture ? <><span className="spinner spinner-sm" /> Uploading…</> : 'Upload Photo'}
+              </button>
+            )}
+
             <div className="profile-name">{user?.firstName} {user?.lastName}</div>
             <div className="profile-role">
               <span className="badge badge-purple">Customer</span>
