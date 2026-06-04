@@ -1,5 +1,7 @@
 import client from './client';
 
+export const getAllUsers = () => client.get('/users');
+export const deleteUser = (id) => client.delete(`/users/${id}`);
 export const updateSelf = (data) => client.put('/users/me', data);
 
 export const uploadProfilePicture = (file) => {

@@ -63,12 +63,14 @@ export default function Navbar() {
   };
 
   const isOrganizer = user?.role === 'EventOrganizer';
+  const isAdmin = user?.role === 'Admin';
   const isActive = (path) => location.pathname === path ? 'navbar-link active' : 'navbar-link';
 
   const organizerLinks = isOrganizer ? [
     { to: '/organizer/my-events', label: 'My Events' },
     { to: '/organizer/create', label: 'Create Event' },
     { to: '/organizer/attendees', label: 'Attendees' },
+    { to: '/organizer/reviews', label: 'Reviews' },
   ] : [];
 
   return (
@@ -86,6 +88,9 @@ export default function Navbar() {
             {isOrganizer && organizerLinks.map((l) => (
               <Link key={l.to} to={l.to} className={isActive(l.to)}>{l.label}</Link>
             ))}
+            {isAdmin && (
+              <Link to="/admin" className={isActive('/admin')}>Dashboard</Link>
+            )}
           </div>
 
           <div className="navbar-actions">
@@ -109,11 +114,11 @@ export default function Navbar() {
                       <Link to="/organizer/profile" className="navbar-dropdown-item">
                         <span>👤</span> Profile
                       </Link>
-                    ) : (
+                    ) : !isAdmin ? (
                       <Link to="/profile" className="navbar-dropdown-item">
                         <span>👤</span> Profile
                       </Link>
-                    )}
+                    ) : null}
                     {isOrganizer && (
                       <>
                         <Link to="/organizer/my-events" className="navbar-dropdown-item">
@@ -125,7 +130,15 @@ export default function Navbar() {
                         <Link to="/organizer/attendees" className="navbar-dropdown-item">
                           <span>👥</span> Attendees
                         </Link>
+                        <Link to="/organizer/reviews" className="navbar-dropdown-item">
+                          <span>⭐</span> Reviews
+                        </Link>
                       </>
+                    )}
+                    {isAdmin && (
+                      <Link to="/admin" className="navbar-dropdown-item">
+                        <span>📊</span> Admin Dashboard
+                      </Link>
                     )}
                     <div className="navbar-dropdown-divider" />
                     <button className="navbar-dropdown-item danger" onClick={handleLogout} style={{ width: '100%', background: 'none', font: 'inherit', textAlign: 'left', border: 'none' }}>
@@ -155,10 +168,13 @@ export default function Navbar() {
         {isOrganizer && organizerLinks.map((l) => (
           <Link key={l.to} to={l.to} className="navbar-link">{l.label}</Link>
         ))}
+        {isAdmin && (
+          <Link to="/admin" className="navbar-link">Dashboard</Link>
+        )}
         <div className="mobile-divider" />
         {user ? (
           <>
-            <Link to={isOrganizer ? '/organizer/profile' : '/profile'} className="navbar-link">Profile</Link>
+            {!isAdmin && <Link to={isOrganizer ? '/organizer/profile' : '/profile'} className="navbar-link">Profile</Link>}
             <button className="navbar-link" style={{ background: 'none', border: 'none', color: 'var(--c-error)', textAlign: 'left', font: 'inherit', cursor: 'pointer' }} onClick={handleLogout}>Sign out</button>
           </>
         ) : (

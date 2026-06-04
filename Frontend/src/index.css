@@ -910,3 +910,354 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .delete-confirm-icon { font-size: 3rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite; }
 .delete-confirm h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
 .delete-confirm p { color: var(--c-text2); font-size: 0.875rem; line-height: 1.6; }
+
+/* =============================================
+   ENHANCED CARD INTERACTIONS
+   ============================================= */
+@keyframes cardShine {
+  from { transform: translateX(-140%) skewX(-12deg); }
+  to   { transform: translateX(240%)  skewX(-12deg); }
+}
+@keyframes bookPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(124,58,237,0.45); }
+  50%       { box-shadow: 0 10px 50px rgba(124,58,237,0.85), 0 0 0 10px rgba(124,58,237,0.08); }
+}
+@keyframes starPop {
+  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+  60%  { transform: scale(1.3) rotate(4deg); }
+  100% { transform: scale(1)   rotate(0);   opacity: 1; }
+}
+@keyframes reviewSlideIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes infoCardIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+@keyframes seatsFill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes heroBurn {
+  from { transform: scale(1.06); }
+  to   { transform: scale(1); }
+}
+@keyframes ratingReveal {
+  from { opacity: 0; transform: scale(0.85) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+/* EVENT CARD — enhanced hover / press / shine */
+.event-card { position: relative; }
+
+.event-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    108deg,
+    transparent 25%,
+    rgba(255,255,255,0.07) 50%,
+    transparent 75%
+  );
+  transform: translateX(-150%);
+  pointer-events: none;
+  z-index: 3;
+}
+.event-card:hover {
+  transform: translateY(-10px);
+  border-color: rgba(139,92,246,0.52);
+  box-shadow:
+    0 24px 64px rgba(0,0,0,0.55),
+    0 0   42px rgba(124,58,237,0.22),
+    0 0   80px rgba(236,72,153,0.1);
+}
+.event-card:hover::after {
+  animation: cardShine 0.65s ease-out forwards;
+}
+.event-card:active {
+  transform: translateY(-3px) scale(0.975);
+  transition-duration: 0.08s;
+}
+
+/* image zoom */
+.event-card-img { overflow: hidden; }
+.event-card-img img {
+  transition: transform 0.6s cubic-bezier(0.4,0,0.2,1);
+  will-change: transform;
+}
+.event-card:hover .event-card-img img { transform: scale(1.1); }
+
+/* animated "View Details" link */
+.event-card-view-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--c-purple-400);
+  transition: gap 0.22s ease, color 0.22s ease;
+}
+.event-card:hover .event-card-view-link { gap: 0.55rem; color: var(--c-purple-300); }
+.event-card-view-link svg { transition: transform 0.22s ease; }
+.event-card:hover .event-card-view-link svg { transform: translateX(3px); }
+
+/* seats bar — animated fill on mount */
+.seats-bar-fill {
+  transform-origin: left center;
+  animation: seatsFill 0.75s cubic-bezier(0.4,0,0.2,1) 0.15s both;
+}
+
+/* =============================================
+   EVENT DETAIL PAGE
+   ============================================= */
+
+/* Back button */
+.detail-back-btn {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  background: rgba(5,5,15,0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: var(--r-full);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.22s ease, border-color 0.22s ease, gap 0.22s ease;
+}
+.detail-back-btn:hover {
+  background: rgba(5,5,15,0.78);
+  border-color: rgba(255,255,255,0.28);
+  gap: 0.55rem;
+}
+.detail-back-btn svg { transition: transform 0.22s ease; }
+.detail-back-btn:hover svg { transform: translateX(-3px); }
+
+/* Info grid card */
+.detail-info-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.95rem 1.1rem;
+  background: var(--c-glass);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  cursor: default;
+  transition: border-color 0.25s ease, background 0.25s ease, transform 0.22s ease, box-shadow 0.25s ease;
+}
+.detail-info-card:hover {
+  border-color: var(--c-border-hover);
+  background: var(--c-glass-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+}
+.detail-info-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 0.6rem;
+  background: rgba(139,92,246,0.13);
+  border: 1px solid rgba(139,92,246,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--c-purple-400);
+}
+
+/* Review card */
+.review-card {
+  padding: 1.25rem;
+  background: var(--c-glass);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  transition: border-color 0.25s ease, background 0.25s ease, transform 0.22s ease;
+}
+.review-card:hover {
+  border-color: var(--c-border-hover);
+  background: var(--c-glass-hover);
+  transform: translateY(-2px);
+}
+
+/* Pulsing book CTA */
+.btn-book { animation: bookPulse 2.8s ease-in-out infinite; }
+.btn-book:hover { animation-play-state: paused; }
+
+/* Ken-burns on hero image */
+.hero-img-burn {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: heroBurn 9s ease-out both;
+  will-change: transform;
+}
+
+/* Average rating reveal */
+.animate-rating-reveal { animation: ratingReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.2s both; }
+
+/* Stagger animation helpers */
+.animate-star-pop     { animation: starPop      0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+.animate-review-in    { animation: reviewSlideIn 0.42s ease both; }
+.animate-info-card-in { animation: infoCardIn   0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* =============================================
+   SCROLL REVEAL UTILITIES
+   ============================================= */
+.reveal-up {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.34, 1.26, 0.64, 1);
+}
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-28px);
+  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.34, 1.26, 0.64, 1);
+}
+.reveal-right {
+  opacity: 0;
+  transform: translateX(28px);
+  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.34, 1.26, 0.64, 1);
+}
+.reveal-up.revealed,
+.reveal-left.revealed,
+.reveal-right.revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* =============================================
+   HERO ADDITIONS
+   ============================================= */
+/* Warm gold fourth orb */
+.hero-orb-4 {
+  width: 380px; height: 380px;
+  background: radial-gradient(circle, rgba(245,158,11,0.55), transparent 70%);
+  top: 55%; right: 15%;
+  animation-delay: -5s;
+  opacity: 0.18;
+}
+
+/* Trust bar under hero CTAs */
+.hero-trust {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin-top: 1.75rem;
+}
+.hero-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--c-text2);
+}
+.hero-trust-sep {
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--c-text3);
+  flex-shrink: 0;
+}
+
+/* =============================================
+   CATEGORIES SECTION
+   ============================================= */
+.categories-section {
+  padding: 2.5rem 0 3rem;
+  border-bottom: 1px solid var(--c-border);
+}
+.categories-strip {
+  display: flex;
+  gap: 0.65rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0.25rem 0 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+.categories-strip::-webkit-scrollbar { display: none; }
+
+@keyframes catSlideIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.95); }
+  to   { opacity: 1; transform: none; }
+}
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--r-full);
+  border: 1px solid var(--c-border);
+  background: var(--c-glass);
+  font-size: 0.83rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.22s ease, border-color 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+  opacity: 0;
+}
+.category-chip.cat-visible {
+  animation: catSlideIn 0.45s cubic-bezier(0.34, 1.26, 0.64, 1) both;
+  animation-delay: calc(var(--i) * 0.06s);
+}
+.category-chip:hover {
+  background: color-mix(in srgb, var(--c-purple-500) 12%, transparent);
+  border-color: var(--c-purple-400);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+/* =============================================
+   HOW IT WORKS — step icon & num
+   ============================================= */
+.step-icon-wrap {
+  width: 54px; height: 54px;
+  border-radius: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 0.75rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.step-card:hover .step-icon-wrap {
+  transform: translateY(-4px) scale(1.06);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.3);
+}
+.step-num-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  opacity: 0.75;
+}
+/* remove the old emoji circle */
+.step-card .step-num { display: none; }
+
+/* =============================================
+   REDUCED MOTION
+   ============================================= */
+@media (prefers-reduced-motion: reduce) {
+  .event-card:hover       { transform: translateY(-3px); }
+  .event-card:hover::after { animation: none; }
+  .event-card:active      { transform: none; }
+  .btn-book               { animation: none; box-shadow: 0 4px 20px rgba(124,58,237,0.45); }
+  .event-card-img img     { transition: none; }
+  .seats-bar-fill         { animation: none; }
+  .hero-img-burn          { animation: none; }
+  .animate-star-pop,
+  .animate-review-in,
+  .animate-info-card-in,
+  .animate-rating-reveal  { animation: none !important; opacity: 1; transform: none; }
+  .reveal-up, .reveal-left, .reveal-right { opacity: 1; transform: none; transition: none; }
+  .category-chip { animation: none; opacity: 1; }
+}

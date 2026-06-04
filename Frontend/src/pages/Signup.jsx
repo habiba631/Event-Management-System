@@ -119,21 +119,21 @@ export default function Signup() {
             <div className="auth-form">
               <div className="form-group">
                 <label className="form-label">Username *</label>
-                <input className="form-input" placeholder="johndoe" value={form.username} onChange={(e) => set('username', e.target.value)} required autoComplete="username" />
+                <input className="form-input" placeholder="ahmed_m" value={form.username} onChange={(e) => set('username', e.target.value)} required autoComplete="username" />
               </div>
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">First name</label>
-                  <input className="form-input" placeholder="John" value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
+                  <input className="form-input" placeholder="Ahmed" value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Last name</label>
-                  <input className="form-input" placeholder="Doe" value={form.lastName} onChange={(e) => set('lastName', e.target.value)} />
+                  <input className="form-input" placeholder="Mostafa" value={form.lastName} onChange={(e) => set('lastName', e.target.value)} />
                 </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Email address *</label>
-                <input type="email" className="form-input" placeholder="you@example.com" value={form.email} onChange={(e) => set('email', e.target.value)} required autoComplete="email" />
+                <input type="email" className="form-input" placeholder="ahmed@gmail.com" value={form.email} onChange={(e) => set('email', e.target.value)} required autoComplete="email" />
               </div>
               <div className="form-group">
                 <label className="form-label">Password *</label>
@@ -180,11 +180,11 @@ export default function Signup() {
                   <div className="auth-divider" style={{ margin: '0.5rem 0' }}>Organization Info</div>
                   <div className="form-group">
                     <label className="form-label">Company name *</label>
-                    <input className="form-input" placeholder="Acme Events LLC" value={form.organizerProfile.companyName} onChange={(e) => setOrg('companyName', e.target.value)} required={isOrganizer} />
+                    <input className="form-input" placeholder="Nile Events Co." value={form.organizerProfile.companyName} onChange={(e) => setOrg('companyName', e.target.value)} required={isOrganizer} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Company address *</label>
-                    <input className="form-input" placeholder="123 Main St, Cairo" value={form.organizerProfile.companyAddress} onChange={(e) => setOrg('companyAddress', e.target.value)} required={isOrganizer} />
+                    <input className="form-input" placeholder="5 Tahrir Square, Cairo" value={form.organizerProfile.companyAddress} onChange={(e) => setOrg('companyAddress', e.target.value)} required={isOrganizer} />
                   </div>
                   <div className="form-grid">
                     <div className="form-group">

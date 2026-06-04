@@ -54,7 +54,7 @@ export default function Login() {
             <label className="form-label">Email address</label>
             <input
               type="email" name="email" className="form-input"
-              placeholder="you@example.com"
+              placeholder="ahmed@gmail.com"
               value={form.email} onChange={handleChange} required
               autoComplete="email"
             />

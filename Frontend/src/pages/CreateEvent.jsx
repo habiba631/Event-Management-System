@@ -70,11 +70,11 @@ export default function CreateEvent() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="form-group">
                   <label className="form-label">Event title *</label>
-                  <input name="title" className="form-input" placeholder="e.g. Summer Jazz Night 2025" value={form.title} onChange={handleChange} required />
+                  <input name="title" className="form-input" placeholder="e.g. Cairo Jazz Night at Sawy Culture Wheel" value={form.title} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Description</label>
-                  <textarea name="description" className="form-input" placeholder="Tell attendees what to expect…" value={form.description} onChange={handleChange} rows={4} />
+                  <textarea name="description" className="form-input" placeholder="Describe the experience — artists, agenda, venue vibe, dress code..." value={form.description} onChange={handleChange} rows={4} />
                 </div>
                 <div className="form-grid">
                   <div className="form-group">
