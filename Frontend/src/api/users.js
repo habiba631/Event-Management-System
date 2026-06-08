@@ -1,5 +1,7 @@
 import client from './client';
 
+export const getAllUsers = () => client.get('/users');
+export const deleteUser = (id) => client.delete(`/users/${id}`);
 export const updateSelf = (data) => client.put('/users/me', data);
 
 export const uploadProfilePicture = (file) => {
@@ -13,3 +15,7 @@ export const uploadTaxRegistry = (file) => {
   formData.append('taxRegistry', file);
   return client.post('/users/me/tax-registry', formData);
 };
+
+export const fetchTaxRegistry = (fileId) => client.get(`/files/tax-registries/${fileId}`, {
+  responseType: 'blob',
+});

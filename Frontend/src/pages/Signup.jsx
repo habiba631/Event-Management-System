@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
@@ -12,6 +12,8 @@ export default function Signup() {
 
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
+  const [taxFile, setTaxFile] = useState(null);
+  const taxInputRef = useRef(null);
   const [form, setForm] = useState({
     role: 'Customer', username: '', firstName: '', lastName: '',
     email: '', password: '', confirmPassword: '', birthDate: '', gender: 'Female',
@@ -36,11 +38,36 @@ export default function Signup() {
       setStep(1);
     } else if (step === 1) {
       if (!form.username || !form.email || !form.password) { setError('Username, email and password are required.'); return; }
+      if (/^\d/.test(form.username.trim())) { setError('Username cannot start with a digit.'); return; }
       if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
       if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
       setStep(2);
     }
     setError('');
+  };
+
+  const handleTaxFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setTaxFile(file);
+    setError('');
+  };
+
+  const buildSignupPayload = () => {
+    const { confirmPassword, ...payload } = form;
+
+    if (!isOrganizer) return payload;
+
+    const formData = new FormData();
+    Object.entries(payload).forEach(([key, value]) => {
+      if (key === 'organizerProfile') {
+        formData.append(key, JSON.stringify(value));
+      } else if (value !== '' && value != null) {
+        formData.append(key, value);
+      }
+    });
+    formData.append('taxRegistry', taxFile);
+    return formData;
   };
 
   const handleSubmit = async (e) => {
@@ -49,8 +76,11 @@ export default function Signup() {
       setError('Company name and address are required for organizers.');
       return;
     }
-    const { confirmPassword, ...payload } = form;
-    const result = await signup(payload);
+    if (isOrganizer && !taxFile) {
+      setError('Tax registry PDF is required for organizers.');
+      return;
+    }
+    const result = await signup(buildSignupPayload());
     if (result.success) {
       success(`Welcome to Eventify, ${result.user.firstName || result.user.username}! 🎉`);
       navigate(isOrganizer ? '/organizer/my-events' : '/events', { replace: true });
@@ -119,21 +149,21 @@ export default function Signup() {
             <div className="auth-form">
               <div className="form-group">
                 <label className="form-label">Username *</label>
-                <input className="form-input" placeholder="johndoe" value={form.username} onChange={(e) => set('username', e.target.value)} required autoComplete="username" />
+                <input className="form-input" placeholder="ahmed_m" value={form.username} onChange={(e) => set('username', e.target.value)} required autoComplete="username" pattern="^\D.*" title="Username cannot start with a digit" />
               </div>
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">First name</label>
-                  <input className="form-input" placeholder="John" value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
+                  <input className="form-input" placeholder="Ahmed" value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Last name</label>
-                  <input className="form-input" placeholder="Doe" value={form.lastName} onChange={(e) => set('lastName', e.target.value)} />
+                  <input className="form-input" placeholder="Mostafa" value={form.lastName} onChange={(e) => set('lastName', e.target.value)} />
                 </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Email address *</label>
-                <input type="email" className="form-input" placeholder="you@example.com" value={form.email} onChange={(e) => set('email', e.target.value)} required autoComplete="email" />
+                <input type="email" className="form-input" placeholder="ahmed@gmail.com" value={form.email} onChange={(e) => set('email', e.target.value)} required autoComplete="email" />
               </div>
               <div className="form-group">
                 <label className="form-label">Password *</label>
@@ -180,11 +210,11 @@ export default function Signup() {
                   <div className="auth-divider" style={{ margin: '0.5rem 0' }}>Organization Info</div>
                   <div className="form-group">
                     <label className="form-label">Company name *</label>
-                    <input className="form-input" placeholder="Acme Events LLC" value={form.organizerProfile.companyName} onChange={(e) => setOrg('companyName', e.target.value)} required={isOrganizer} />
+                    <input className="form-input" placeholder="Nile Events Co." value={form.organizerProfile.companyName} onChange={(e) => setOrg('companyName', e.target.value)} required={isOrganizer} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Company address *</label>
-                    <input className="form-input" placeholder="123 Main St, Cairo" value={form.organizerProfile.companyAddress} onChange={(e) => setOrg('companyAddress', e.target.value)} required={isOrganizer} />
+                    <input className="form-input" placeholder="5 Tahrir Square, Cairo" value={form.organizerProfile.companyAddress} onChange={(e) => setOrg('companyAddress', e.target.value)} required={isOrganizer} />
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
@@ -195,6 +225,31 @@ export default function Signup() {
                       <label className="form-label">Tax ID</label>
                       <input className="form-input" value={form.organizerProfile.taxId} onChange={(e) => setOrg('taxId', e.target.value)} />
                     </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Tax registry (PDF) *</label>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--c-text3)', margin: '0 0 0.5rem' }}>
+                      Upload your official tax registry document (PDF, max 10 MB).
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => taxInputRef.current?.click()}
+                      >
+                        {taxFile ? 'Change PDF' : 'Select PDF'}
+                      </button>
+                      {taxFile && (
+                        <span style={{ fontSize: '0.85rem', color: 'var(--c-text2)' }}>{taxFile.name}</span>
+                      )}
+                    </div>
+                    <input
+                      ref={taxInputRef}
+                      type="file"
+                      accept="application/pdf"
+                      style={{ display: 'none' }}
+                      onChange={handleTaxFileChange}
+                    />
                   </div>
                 </>
               )}

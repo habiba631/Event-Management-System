@@ -10,7 +10,7 @@ export default function Login() {
   const location = useLocation();
   const from = location.state?.from?.pathname || '/';
 
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ identifier: '', password: '' });
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
@@ -20,7 +20,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.password) { setError('Please fill in all fields.'); return; }
+    if (!form.identifier || !form.password) { setError('Please fill in all fields.'); return; }
     const result = await login(form);
     if (result.success) {
       success(`Welcome back, ${result.user.firstName || result.user.username}! 👋`);
@@ -51,12 +51,12 @@ export default function Login() {
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Email address</label>
+            <label className="form-label">Email or username</label>
             <input
-              type="email" name="email" className="form-input"
-              placeholder="you@example.com"
-              value={form.email} onChange={handleChange} required
-              autoComplete="email"
+              type="text" name="identifier" className="form-input"
+              placeholder="ahmed@gmail.com or ahmed_m"
+              value={form.identifier} onChange={handleChange} required
+              autoComplete="username"
             />
           </div>
 

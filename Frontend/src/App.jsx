@@ -14,8 +14,15 @@ import OrganizerProfile from './pages/OrganizerProfile';
 import CreateEvent from './pages/CreateEvent';
 import MyEvents from './pages/MyEvents';
 import Attendees from './pages/Attendees';
+import EventDetail from './pages/EventDetail';
+import EventReviews from './pages/EventReviews';
 import BookingSuccess from './pages/BookingSuccess';
 import BookingCancel from './pages/BookingCancel';
+import AdminDashboard from './pages/AdminDashboard';
+import AboutUs from './pages/AboutUs';
+import PolicyPage from './pages/PolicyPage';
+import TermsOfService from './pages/TermsOfService';
+import Contact from './pages/Contact';
 
 export default function App() {
   return (
@@ -29,6 +36,11 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/events" element={<Events />} />
+              <Route path="/events/:id" element={<EventDetail />} />
+              <Route path="/about" element={<AboutUs />} />
+              <Route path="/legal/policy" element={<PolicyPage />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/contact" element={<Contact />} />
 
               <Route path="/profile" element={
                 <ProtectedRoute roles={['Customer']}>
@@ -60,6 +72,12 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
+              <Route path="/organizer/reviews" element={
+                <ProtectedRoute roles={['EventOrganizer', 'Admin']}>
+                  <EventReviews />
+                </ProtectedRoute>
+              } />
+
               <Route path="/booking/success" element={
                 <ProtectedRoute roles={['Customer']}>
                   <BookingSuccess />
@@ -68,6 +86,12 @@ export default function App() {
               <Route path="/booking/cancel" element={
                 <ProtectedRoute roles={['Customer']}>
                   <BookingCancel />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/admin" element={
+                <ProtectedRoute roles={['Admin']}>
+                  <AdminDashboard />
                 </ProtectedRoute>
               } />
 

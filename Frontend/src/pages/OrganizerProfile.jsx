@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
-import { updateSelf, uploadProfilePicture as apiUploadProfilePicture, uploadTaxRegistry as apiUploadTaxRegistry } from '../api/users';
+import { updateSelf, uploadProfilePicture as apiUploadProfilePicture, fetchTaxRegistry } from '../api/users';
 
 const TAGS = ['Music', 'Sports', 'Technology', 'Arts', 'Food', 'Business', 'Health', 'Education'];
 
@@ -10,11 +10,6 @@ const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 function getProfilePictureUrl(profileImage) {
   if (!profileImage) return null;
   return `${API_BASE}/files/profile-pictures/${profileImage}`;
-}
-
-function getTaxRegistryUrl(taxRegistry) {
-  if (!taxRegistry) return null;
-  return `${API_BASE}/files/tax-registries/${taxRegistry}`;
 }
 
 function getInitials(user) {
@@ -35,9 +30,53 @@ export default function OrganizerProfile() {
   const [uploadingPicture, setUploadingPicture] = useState(false);
   const pictureInputRef = useRef(null);
 
-  const [taxFile, setTaxFile] = useState(null);
-  const [uploadingTax, setUploadingTax] = useState(false);
-  const taxInputRef = useRef(null);
+  const [taxRegistryPreviewUrl, setTaxRegistryPreviewUrl] = useState(null);
+  const [loadingTaxRegistry, setLoadingTaxRegistry] = useState(false);
+  const [taxRegistryError, setTaxRegistryError] = useState(false);
+
+  const taxRegistryId = user?.organizerProfile?.taxRegistry;
+
+  useEffect(() => {
+    if (!taxRegistryId) {
+      setTaxRegistryPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      return undefined;
+    }
+
+    let cancelled = false;
+    let objectUrl = null;
+
+    setLoadingTaxRegistry(true);
+    setTaxRegistryError(false);
+    fetchTaxRegistry(taxRegistryId)
+      .then((res) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(res.data);
+        setTaxRegistryPreviewUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return objectUrl;
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTaxRegistryPreviewUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+          });
+          setTaxRegistryError(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingTaxRegistry(false);
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [taxRegistryId]);
 
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
@@ -91,27 +130,6 @@ export default function OrganizerProfile() {
     }
   };
 
-  const handleTaxFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setTaxFile(file);
-  };
-
-  const handleTaxUpload = async () => {
-    if (!taxFile) return;
-    setUploadingTax(true);
-    try {
-      const res = await apiUploadTaxRegistry(taxFile);
-      updateUserData(res.data.user);
-      setTaxFile(null);
-      success('Tax registry uploaded!');
-    } catch (err) {
-      error(err.response?.data?.message || 'Failed to upload tax registry.');
-    } finally {
-      setUploadingTax(false);
-    }
-  };
-
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -130,7 +148,12 @@ export default function OrganizerProfile() {
   };
 
   const profilePictureUrl = getProfilePictureUrl(user?.profileImage);
-  const taxRegistryUrl = getTaxRegistryUrl(user?.organizerProfile?.taxRegistry);
+
+  const handleOpenTaxRegistry = () => {
+    if (taxRegistryPreviewUrl) {
+      window.open(taxRegistryPreviewUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
     <div className="page">
@@ -304,49 +327,52 @@ export default function OrganizerProfile() {
                       <h2 className="profile-section-title">Tax Registry</h2>
                     </div>
                     <p style={{ fontSize: '0.85rem', color: 'var(--c-text2)', marginBottom: '1rem' }}>
-                      Upload your official tax registry document (PDF, max 10 MB).
+                      Your tax registry document was submitted during registration.
                     </p>
 
-                    {taxRegistryUrl && !taxFile && (
-                      <div style={{ marginBottom: '1rem', padding: '0.75rem', background: 'var(--c-glass)', borderRadius: 'var(--r-lg)', border: '1px solid var(--c-border)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{ fontSize: '1.25rem' }}>📄</span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Tax registry on file</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--c-text3)' }}>Click to view current document</div>
-                        </div>
-                        <a href={taxRegistryUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">View PDF</a>
-                      </div>
-                    )}
-
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => taxInputRef.current?.click()}
-                      >
-                        {taxRegistryUrl ? 'Replace PDF' : 'Select PDF'}
-                      </button>
-                      {taxFile && (
-                        <>
-                          <span style={{ fontSize: '0.85rem', color: 'var(--c-text2)' }}>{taxFile.name}</span>
+                    {taxRegistryId ? (
+                      <div className="tax-registry-viewer">
+                        <div className="tax-registry-viewer-header">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <span style={{ fontSize: '1.25rem' }}>📄</span>
+                            <div>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Tax registry on file</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--c-text3)' }}>Submitted at signup</div>
+                            </div>
+                          </div>
                           <button
                             type="button"
-                            className="btn btn-primary"
-                            onClick={handleTaxUpload}
-                            disabled={uploadingTax}
+                            className="btn btn-secondary btn-sm"
+                            onClick={handleOpenTaxRegistry}
+                            disabled={!taxRegistryPreviewUrl || loadingTaxRegistry}
                           >
-                            {uploadingTax ? <><span className="spinner spinner-sm" /> Uploading…</> : 'Upload'}
+                            Open in new tab
                           </button>
-                        </>
-                      )}
-                    </div>
-                    <input
-                      ref={taxInputRef}
-                      type="file"
-                      accept="application/pdf"
-                      style={{ display: 'none' }}
-                      onChange={handleTaxFileChange}
-                    />
+                        </div>
+
+                        {loadingTaxRegistry ? (
+                          <div className="tax-registry-viewer-loading">
+                            <span className="spinner spinner-sm" /> Loading document…
+                          </div>
+                        ) : taxRegistryPreviewUrl ? (
+                          <iframe
+                            src={taxRegistryPreviewUrl}
+                            title="Tax registry document"
+                            className="tax-registry-preview"
+                          />
+                        ) : (
+                          <div className="tax-registry-viewer-empty">
+                            {taxRegistryError
+                              ? 'Could not load your tax registry document.'
+                              : 'Unable to preview this document.'}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ padding: '0.75rem', background: 'var(--c-glass)', borderRadius: 'var(--r-lg)', border: '1px solid var(--c-border)', fontSize: '0.85rem', color: 'var(--c-text2)' }}>
+                        No tax registry document on file.
+                      </div>
+                    )}
                   </div>
                 </>
               )}

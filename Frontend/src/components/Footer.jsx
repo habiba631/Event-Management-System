@@ -36,10 +36,10 @@ export default function Footer() {
           <div className="footer-col">
             <h4>Company</h4>
             <ul>
-              <li><a href="#">About Us</a></li>
-              <li><a href="#">Privacy Policy</a></li>
-              <li><a href="#">Terms of Service</a></li>
-              <li><a href="#">Contact</a></li>
+              <li><Link to="/about">About Us</Link></li>
+              <li><Link to="/legal/policy">Privacy Policy</Link></li>
+              <li><Link to="/terms">Terms of Service</Link></li>
+              <li><Link to="/contact">Contact</Link></li>
             </ul>
           </div>
         </div>

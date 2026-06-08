@@ -37,8 +37,17 @@ async function serveProfilePicture(req, res) {
 
 async function serveTaxRegistry(req, res) {
   try {
+    const fileId = req.params.id;
+
+    if (req.user.role === 'EventOrganizer') {
+      const ownsFile = req.user.organizerProfile?.taxRegistry === fileId;
+      if (!ownsFile) {
+        return res.status(403).json({ message: 'You can only view your own tax registry' });
+      }
+    }
+
     const bucket = getGridFSBucket('taxRegistries');
-    const id = new mongoose.Types.ObjectId(req.params.id);
+    const id = new mongoose.Types.ObjectId(fileId);
     const files = await bucket.find({ _id: id }).toArray();
     if (!files.length) return res.status(404).json({ message: 'File not found' });
 

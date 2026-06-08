@@ -1,12 +1,12 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { updateSelf, uploadProfilePicture as apiUploadProfilePicture } from '../api/users';
 import { getAllBookings, deleteBooking } from '../api/bookings';
-import { useEffect } from 'react';
+import { getMyReviews, createReview, updateReview, deleteReview } from '../api/reviews';
+import TicketQRModal from '../components/TicketQRModal';
 
 const TAGS = ['Music', 'Sports', 'Technology', 'Arts', 'Food', 'Business', 'Health', 'Education'];
-
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 function getProfilePictureUrl(profileImage) {
@@ -24,6 +24,148 @@ function formatDate(d) {
   return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 }
 
+function StarPicker({ value, onChange, disabled }) {
+  const [hovered, setHovered] = useState(0);
+  return (
+    <div style={{ display: 'flex', gap: '0.2rem' }}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          disabled={disabled}
+          onMouseEnter={() => setHovered(star)}
+          onMouseLeave={() => setHovered(0)}
+          onClick={() => onChange(star)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: disabled ? 'default' : 'pointer',
+            fontSize: '1.4rem',
+            padding: '0 0.05rem',
+            color: star <= (hovered || value) ? '#f59e0b' : 'var(--c-border)',
+            transition: 'color 0.1s',
+          }}
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StarDisplay({ value }) {
+  return (
+    <span style={{ color: '#f59e0b', fontSize: '1rem', letterSpacing: '0.05em' }}>
+      {'★'.repeat(value)}
+      <span style={{ color: 'var(--c-border)' }}>{'★'.repeat(5 - value)}</span>
+    </span>
+  );
+}
+
+function ReviewForm({ bookingId, eventId, existingReview, onSaved, onDeleted }) {
+  const { success, error } = useToast();
+  const [open, setOpen] = useState(false);
+  const [rating, setRating] = useState(existingReview?.rating || 0);
+  const [comment, setComment] = useState(existingReview?.comment || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!rating) return error('Please select a star rating.');
+    setSaving(true);
+    try {
+      if (existingReview) {
+        const res = await updateReview(existingReview._id, { rating, comment });
+        onSaved(res.data);
+        success('Review updated!');
+      } else {
+        const res = await createReview({ event: eventId, rating, comment });
+        onSaved(res.data);
+        success('Review submitted!');
+      }
+      setOpen(false);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to save review.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Delete your review?')) return;
+    try {
+      await deleteReview(existingReview._id);
+      onDeleted(existingReview._id);
+      setRating(0);
+      setComment('');
+      success('Review deleted.');
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to delete review.');
+    }
+  };
+
+  if (existingReview && !open) {
+    return (
+      <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'var(--c-bg2)', borderRadius: 'var(--r)', border: '1px solid var(--c-border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <StarDisplay value={existingReview.rating} />
+            <span style={{ fontSize: '0.78rem', color: 'var(--c-text3)' }}>Your review</span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => { setRating(existingReview.rating); setComment(existingReview.comment || ''); setOpen(true); }}
+            >
+              Edit
+            </button>
+            <button className="btn btn-danger btn-sm" onClick={handleDelete}>Delete</button>
+          </div>
+        </div>
+        {existingReview.comment && (
+          <p style={{ margin: '0.4rem 0 0', fontSize: '0.82rem', color: 'var(--c-text2)' }}>{existingReview.comment}</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: '0.75rem' }}>
+      {!open ? (
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => setOpen(true)}
+        >
+          ★ Rate &amp; Review
+        </button>
+      ) : (
+        <form onSubmit={handleSubmit} style={{ padding: '0.75rem', background: 'var(--c-bg2)', borderRadius: 'var(--r)', border: '1px solid var(--c-border)' }}>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <StarPicker value={rating} onChange={setRating} disabled={saving} />
+          </div>
+          <textarea
+            className="form-input"
+            placeholder="Share your experience (optional)…"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={2}
+            style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}
+            disabled={saving}
+          />
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={saving || !rating}>
+              {saving ? <><span className="spinner spinner-sm" /> Saving…</> : (existingReview ? 'Update' : 'Submit')}
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)} disabled={saving}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
 export default function CustomerProfile() {
   const { user, updateUserData } = useAuth();
   const { success, error } = useToast();
@@ -31,7 +173,9 @@ export default function CustomerProfile() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [bookings, setBookings] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
+  const [qrBooking, setQrBooking] = useState(null);
 
   const [picturePreview, setPicturePreview] = useState(null);
   const [pictureFile, setPictureFile] = useState(null);
@@ -52,12 +196,23 @@ export default function CustomerProfile() {
     preferences: user?.preferences || [],
   });
 
-  useEffect(() => {
-    if (tab === 'bookings') {
-      setLoadingBookings(true);
-      getAllBookings().then((res) => setBookings(res.data)).catch(() => setBookings([])).finally(() => setLoadingBookings(false));
+  const fetchTicketsData = useCallback(async () => {
+    setLoadingBookings(true);
+    try {
+      const [bookingsRes, reviewsRes] = await Promise.all([getAllBookings(), getMyReviews()]);
+      setBookings(bookingsRes.data);
+      setReviews(reviewsRes.data);
+    } catch {
+      setBookings([]);
+      setReviews([]);
+    } finally {
+      setLoadingBookings(false);
     }
-  }, [tab]);
+  }, []);
+
+  useEffect(() => {
+    if (tab === 'tickets') fetchTicketsData();
+  }, [tab, fetchTicketsData]);
 
   const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -121,6 +276,20 @@ export default function CustomerProfile() {
     }
   };
 
+  const handleReviewSaved = (newReview) => {
+    setReviews((prev) => {
+      const exists = prev.find((r) => r._id === newReview._id);
+      if (exists) return prev.map((r) => (r._id === newReview._id ? newReview : r));
+      return [...prev, newReview];
+    });
+  };
+
+  const handleReviewDeleted = (reviewId) => {
+    setReviews((prev) => prev.filter((r) => r._id !== reviewId));
+  };
+
+  const getReviewForEvent = (eventId) => reviews.find((r) => r.event?._id === eventId || r.event === eventId);
+
   const profilePictureUrl = getProfilePictureUrl(user?.profileImage);
 
   return (
@@ -182,7 +351,7 @@ export default function CustomerProfile() {
             <nav className="profile-nav">
               {[
                 { key: 'profile', icon: '👤', label: 'Profile' },
-                { key: 'bookings', icon: '🎟', label: 'My Bookings' },
+                { key: 'tickets', icon: '🎟', label: 'My Tickets' },
               ].map((item) => (
                 <button key={item.key} className={`profile-nav-item${tab === item.key ? ' active' : ''}`}
                   style={{ background: 'none', border: 'none', width: '100%', font: 'inherit', cursor: 'pointer', textAlign: 'left' }}
@@ -274,10 +443,10 @@ export default function CustomerProfile() {
               </form>
             )}
 
-            {tab === 'bookings' && (
+            {tab === 'tickets' && (
               <div className="profile-section">
                 <div className="profile-section-header">
-                  <h2 className="profile-section-title">My Bookings</h2>
+                  <h2 className="profile-section-title">My Tickets</h2>
                   <span className="badge badge-purple">{bookings.length}</span>
                 </div>
                 {loadingBookings ? (
@@ -285,29 +454,57 @@ export default function CustomerProfile() {
                 ) : bookings.length === 0 ? (
                   <div className="empty-state">
                     <div className="empty-icon">🎟</div>
-                    <h3>No bookings yet</h3>
+                    <h3>No tickets yet</h3>
                     <p>Browse events and book your first experience.</p>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {bookings.map((bk) => (
-                      <div key={bk._id} style={{ padding: '1rem', background: 'var(--c-glass)', border: '1px solid var(--c-border)', borderRadius: 'var(--r-lg)', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{bk.event?.title || 'Unknown Event'}</div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--c-text2)', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                            <span>📅 {formatDate(bk.event?.startsAt)}</span>
-                            <span>🎟 {bk.ticketCount} ticket{bk.ticketCount > 1 ? 's' : ''}</span>
-                            <span>Booked {formatDate(bk.createdAt)}</span>
+                    {bookings.map((bk) => {
+                      const existingReview = getReviewForEvent(bk.event?._id);
+                      return (
+                        <div key={bk._id} style={{ padding: '1rem', background: 'var(--c-glass)', border: '1px solid var(--c-border)', borderRadius: 'var(--r-lg)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{bk.event?.title || 'Unknown Event'}</div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--c-text2)', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                <span>📅 {formatDate(bk.event?.startsAt)}</span>
+                                <span>🎟 {bk.ticketCount} ticket{bk.ticketCount > 1 ? 's' : ''}</span>
+                                <span>Booked {formatDate(bk.createdAt)}</span>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              <span className={`badge ${bk.status === 'confirmed' ? 'badge-green' : bk.status === 'cancelled' ? 'badge-red' : 'badge-amber'}`}>{bk.status}</span>
+                              {bk.status === 'confirmed' && (
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  onClick={() => setQrBooking(bk)}
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                                >
+                                  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+                                    <path d="M14 14h.01M14 17h.01M17 14h.01M17 17h.01M20 14h.01M20 17h.01M20 20h.01M17 20h.01M14 20h.01" />
+                                  </svg>
+                                  QR Ticket
+                                </button>
+                              )}
+                              {bk.status !== 'cancelled' && (
+                                <button className="btn btn-danger btn-sm" onClick={() => handleCancelBooking(bk._id)}>Cancel</button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span className={`badge ${bk.status === 'confirmed' ? 'badge-green' : bk.status === 'cancelled' ? 'badge-red' : 'badge-amber'}`}>{bk.status}</span>
-                          {bk.status !== 'cancelled' && (
-                            <button className="btn btn-danger btn-sm" onClick={() => handleCancelBooking(bk._id)}>Cancel</button>
+
+                          {bk.status === 'confirmed' && (
+                            <ReviewForm
+                              bookingId={bk._id}
+                              eventId={bk.event?._id}
+                              existingReview={existingReview}
+                              onSaved={handleReviewSaved}
+                              onDeleted={handleReviewDeleted}
+                            />
                           )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -315,6 +512,14 @@ export default function CustomerProfile() {
           </div>
         </div>
       </div>
+
+      {qrBooking && (
+        <TicketQRModal
+          booking={qrBooking}
+          holderName={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || user?.username}
+          onClose={() => setQrBooking(null)}
+        />
+      )}
     </div>
   );
 }

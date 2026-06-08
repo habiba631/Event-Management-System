@@ -2,9 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getAllEvents } from '../api/events';
 import EventCard from '../components/EventCard';
-import BookingModal from '../components/BookingModal';
-import { useAuth } from '../context/AuthContext';
-
 const CATEGORIES = ['All', 'Music', 'Sports', 'Technology', 'Arts', 'Food', 'Business', 'Health', 'Education', 'Other'];
 const STATUSES = [
   { value: '', label: 'All Statuses' },
@@ -15,12 +12,10 @@ const STATUSES = [
 ];
 
 export default function Events() {
-  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [bookingEvent, setBookingEvent] = useState(null);
   const [search, setSearch] = useState(searchParams.get('q') || '');
   const [category, setCategory] = useState(searchParams.get('category') || 'All');
   const [status, setStatus] = useState(searchParams.get('status') || '');
@@ -60,10 +55,6 @@ export default function Events() {
     const val = e.target.value;
     setStatus(val);
     fetchEvents(search, category, val);
-  };
-
-  const handleBookingSuccess = () => {
-    fetchEvents(search, category, status);
   };
 
   return (
@@ -126,10 +117,7 @@ export default function Events() {
           <div className="events-grid">
             {events.map((ev, i) => (
               <div key={ev._id} className="animate-fadeInUp" style={{ animationDelay: `${Math.min(i, 8) * 0.06}s` }}>
-                <EventCard
-                  event={ev}
-                  onBook={user?.role === 'Customer' ? (e) => setBookingEvent(e) : null}
-                />
+                <EventCard event={ev} />
               </div>
             ))}
           </div>
@@ -142,13 +130,6 @@ export default function Events() {
         )}
       </div>
 
-      {bookingEvent && (
-        <BookingModal
-          event={bookingEvent}
-          onClose={() => setBookingEvent(null)}
-          onSuccess={handleBookingSuccess}
-        />
-      )}
     </div>
   );
 }

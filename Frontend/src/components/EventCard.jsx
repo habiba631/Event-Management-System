@@ -1,3 +1,4 @@
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const CATEGORY_GRADIENTS = {
@@ -39,7 +40,9 @@ function getInitials(name) {
   return name ? name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() : '?';
 }
 
-export default function EventCard({ event, onBook, onEdit }) {
+export default function EventCard({ event, onEdit }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const isOrganizer = user?.role === 'EventOrganizer';
   const isOwner = isOrganizer && String(event.organizerUser) === String(user?._id);
@@ -50,20 +53,48 @@ export default function EventCard({ event, onBook, onEdit }) {
   const seatsLeft = event.seatsLeft ?? Math.max(0, event.capacity - event.registrations);
   const pctFilled = Math.min(100, Math.round((event.registrations / event.capacity) * 100));
   const seatsBarColor = pctFilled >= 90 ? '#ef4444' : pctFilled >= 60 ? '#f59e0b' : '#10b981';
+  const seatsUrgent = seatsLeft > 0 && seatsLeft <= 5 && event.status === 'open';
+
+  const handleCardClick = () => {
+    if (isOwner && onEdit) {
+      onEdit(event);
+    } else {
+      navigate(`/events/${event._id}`, {
+        state: { from: `${location.pathname}${location.search}` },
+      });
+    }
+  };
 
   return (
-    <div className="event-card" onClick={isOwner && onEdit ? () => onEdit(event) : undefined}>
+    <div className="event-card" onClick={handleCardClick}>
+      {/* Banner */}
       <div className="event-card-img" style={{ background: gradient }}>
         {event.imageUrl
           ? <img src={event.imageUrl} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <span style={{ fontSize: '3rem' }}>{emoji}</span>
+          : <span style={{ fontSize: '3rem', position: 'relative', zIndex: 1 }}>{emoji}</span>
         }
         <div className="event-card-img-overlay" />
+
+        {seatsUrgent && (
+          <div style={{
+            position: 'absolute', top: 10, right: 10, zIndex: 2,
+            padding: '0.22rem 0.6rem',
+            background: 'rgba(239,68,68,0.88)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: 'var(--r-full)',
+            fontSize: '0.68rem', fontWeight: 700, color: '#fff',
+            letterSpacing: '0.05em', lineHeight: 1,
+            border: '1px solid rgba(255,255,255,0.15)',
+          }}>
+            Only {seatsLeft} left!
+          </div>
+        )}
       </div>
 
+      {/* Body */}
       <div className="event-card-body">
         <div className="event-card-badges">
-          <span className={`badge badge-purple`}>{event.category}</span>
+          <span className="badge badge-purple">{event.category}</span>
           <span className={`badge ${status.cls}`}>{status.label}</span>
           <span className={`badge ${(event.price ?? 0) === 0 ? 'badge-green' : 'badge-amber'}`}>
             {(event.price ?? 0) === 0 ? 'Free' : `EGP ${(event.price / 100).toFixed(2)}`}
@@ -74,18 +105,28 @@ export default function EventCard({ event, onBook, onEdit }) {
 
         <div className="event-card-meta">
           <div className="event-card-meta-row">
-            <svg className="event-card-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+            <svg className="event-card-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
             {formatDate(event.startsAt)} · {formatTime(event.startsAt)}
           </div>
           <div className="event-card-meta-row">
-            <svg className="event-card-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+            <svg className="event-card-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
             {event.location}{event.city ? `, ${event.city}` : ''}
           </div>
         </div>
 
         <div className="event-card-seats">
           <div className="seats-bar-wrap">
-            <span>{seatsLeft} seats left</span>
+            <span style={{ color: seatsUrgent ? 'var(--c-error)' : undefined }}>
+              {seatsLeft} seats left
+            </span>
             <div className="seats-bar">
               <div className="seats-bar-fill" style={{ width: `${pctFilled}%`, background: seatsBarColor }} />
             </div>
@@ -94,6 +135,7 @@ export default function EventCard({ event, onBook, onEdit }) {
         </div>
       </div>
 
+      {/* Footer */}
       <div className="event-card-footer">
         <div className="event-organizer">
           <div className="event-organizer-avatar">{getInitials(event.organizer)}</div>
@@ -104,13 +146,14 @@ export default function EventCard({ event, onBook, onEdit }) {
           <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); onEdit(event); }}>
             Manage
           </button>
-        ) : user?.role === 'Customer' && onBook && event.status === 'open' && seatsLeft > 0 ? (
-          <button className="btn btn-primary btn-sm" onClick={(e) => { e.stopPropagation(); onBook(event); }}>
-            Book Now
-          </button>
-        ) : !user && event.status === 'open' ? (
-          <span style={{ fontSize: '0.78rem', color: 'var(--c-text3)' }}>Login to book</span>
-        ) : null}
+        ) : (
+          <span className="event-card-view-link">
+            View Details
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </span>
+        )}
       </div>
     </div>
   );

@@ -10,6 +10,8 @@ const eventRoutes = require("./routes/EventRoutes");
 const bookingRoutes = require("./routes/BookingRoutes");
 const paymentRoutes = require("./routes/PaymentRoutes");
 const fileRoutes = require("./routes/FileRoutes");
+const reviewRoutes = require("./routes/ReviewRoutes");
+const adminRoutes = require("./routes/AdminRoutes");
 
 const app = express();
 
@@ -17,6 +19,7 @@ const app = express();
 app.use(cors({ origin: true, credentials: true }));
 
 app.use(express.json());
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "eventify-dev-secret-change-in-production",
@@ -29,7 +32,6 @@ app.use(
     }),
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     },
   })
@@ -42,8 +44,10 @@ app.use("/api/events", eventRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/files", fileRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/admin", adminRoutes);
 
-function healthcheck(req, res) {
+function healthcheck(req, res){
   let email = req.body.email;
   res.send("API is running successfully for user with email : " + email);
 }

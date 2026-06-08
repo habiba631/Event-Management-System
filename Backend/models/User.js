@@ -50,6 +50,10 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
+      validate: {
+        validator: (value) => !/^\d/.test(value),
+        message: "Username cannot start with a digit",
+      },
     },
     firstName: {
       type: String,

@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { getGridFSBucket, writeToGridFS } = require("./FileController");
 
 const JWT_SECRET = process.env.JWT_SECRET || "eventify-jwt-secret-change-in-production";
 
@@ -8,7 +9,30 @@ function signToken(id) {
   return jwt.sign({ id }, JWT_SECRET, { expiresIn: "7d" });
 }
 
+function parseSignupBody(body) {
+  const parsed = { ...body };
+
+  if (typeof parsed.organizerProfile === "string") {
+    try {
+      parsed.organizerProfile = JSON.parse(parsed.organizerProfile);
+    } catch {
+      throw new Error("Invalid organizer profile data");
+    }
+  }
+  if (typeof parsed.preferences === "string") {
+    try {
+      parsed.preferences = JSON.parse(parsed.preferences);
+    } catch {
+      parsed.preferences = [];
+    }
+  }
+
+  return parsed;
+}
+
 async function signup(req, res) {
+  let createdUserId = null;
+
   try {
     const {
       username, firstName = "", lastName = "", birthDate, email, password, gender,
@@ -17,7 +41,20 @@ async function signup(req, res) {
       role = "Customer",
       preferences = [],
       organizerProfile,
-    } = req.body;
+    } = parseSignupBody(req.body);
+
+    if (/^\d/.test(username?.trim())) {
+      return res.status(400).json({ message: "Username cannot start with a digit" });
+    }
+
+    if (role === "EventOrganizer") {
+      if (!req.file) {
+        return res.status(400).json({ message: "Tax registry PDF is required for organizers" });
+      }
+      if (!organizerProfile?.companyName || !organizerProfile?.companyAddress) {
+        return res.status(400).json({ message: "Company name and address are required for organizers" });
+      }
+    }
 
     const existingUser = await User.findOne({
       $or: [{ email }, { username }],
@@ -33,7 +70,7 @@ async function signup(req, res) {
       username,
       firstName,
       lastName,
-      birthDate,
+      birthDate: birthDate || undefined,
       email,
       password: hashedPassword,
       gender,
@@ -43,29 +80,58 @@ async function signup(req, res) {
       preferences,
       organizerProfile,
     });
+    createdUserId = user._id;
 
-    const token = signToken(user._id);
+    let savedUser = user;
 
-    req.session.userId = user._id.toString();
+    if (role === "EventOrganizer" && req.file) {
+      const bucket = getGridFSBucket("taxRegistries");
+      const fileId = await writeToGridFS(
+        bucket,
+        req.file.buffer,
+        `${user._id}-${Date.now()}-${req.file.originalname}`,
+        "application/pdf"
+      );
+
+      savedUser = await User.findByIdAndUpdate(
+        user._id,
+        { "organizerProfile.taxRegistry": fileId.toString() },
+        { new: true }
+      );
+    }
+
+    const token = signToken(savedUser._id);
+
+    req.session.userId = savedUser._id.toString();
 
     return res.status(201).json({
       message: "Signup successful",
       token,
-      user: { ...user.toObject(), password: undefined },
+      user: { ...savedUser.toObject(), password: undefined },
     });
   } catch (error) {
+    if (createdUserId) {
+      await User.findByIdAndDelete(createdUserId).catch(() => {});
+    }
     return res.status(400).json({ message: error.message });
   }
 }
 
 async function login(req, res) {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const loginId = (req.body.identifier || req.body.email || "").trim();
 
-    const user = await User.findOne({ email }).select("+password");
+    if (!loginId || !password) {
+      return res.status(400).json({ message: "Email/username and password are required" });
+    }
+
+    const user = await User.findOne({
+      $or: [{ email: loginId.toLowerCase() }, { username: loginId }],
+    }).select("+password");
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: "Invalid email/username or password" });
     }
 
     const token = signToken(user._id);

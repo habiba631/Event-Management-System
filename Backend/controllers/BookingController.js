@@ -76,13 +76,28 @@ async function getAllBookings(req, res) {
     const { user: userId, event: eventId, status } = req.query;
     const filter = {};
 
-    if (req.user.role !== "Admin") {
-      filter.user = req.user._id;
-    } else {
+    if (req.user.role === "Admin") {
       if (userId) filter.user = userId;
+      if (eventId) filter.event = eventId;
+    } else if (req.user.role === "EventOrganizer") {
+      if (eventId) {
+        // Verify the requested event belongs to this organizer before exposing attendees
+        const event = await Event.findById(eventId);
+        if (!event) return res.status(404).json({ message: "Event not found" });
+        if (String(event.organizerUser) !== String(req.user._id)) {
+          return res.status(403).json({ message: "You do not have permission to view bookings for this event" });
+        }
+        filter.event = eventId;
+      } else {
+        // No event specified — return only the organizer's own personal bookings
+        filter.user = req.user._id;
+      }
+    } else {
+      // Customer: only their own bookings
+      filter.user = req.user._id;
+      if (eventId) filter.event = eventId;
     }
 
-    if (eventId) filter.event = eventId;
     if (status) filter.status = status;
 
     const bookings = await Booking.find(filter)
