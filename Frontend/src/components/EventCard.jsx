@@ -1,5 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';import { useAuth } from '../context/AuthContext';
 
 const CATEGORY_GRADIENTS = {
   Music:       'linear-gradient(135deg,#7c3aed,#ec4899)',
@@ -42,8 +41,7 @@ function getInitials(name) {
 
 export default function EventCard({ event, onEdit }) {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useAuth();
+  const location = useLocation();  const { user } = useAuth();
   const isOrganizer = user?.role === 'EventOrganizer';
   const isOwner = isOrganizer && String(event.organizerUser) === String(user?._id);
 
@@ -61,8 +59,7 @@ export default function EventCard({ event, onEdit }) {
     } else {
       navigate(`/events/${event._id}`, {
         state: { from: `${location.pathname}${location.search}` },
-      });
-    }
+      });    }
   };
 
   return (
