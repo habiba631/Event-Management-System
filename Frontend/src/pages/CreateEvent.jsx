@@ -139,7 +139,7 @@ export default function CreateEvent() {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Ticket Price (USD)</label>
+                  <label className="form-label">Ticket Price</label>
                   <input type="number" name="price" className="form-input" placeholder="0.00 for free" value={form.price} onChange={handleChange} min="0" step="0.01" />
                   <span className="form-hint">Leave empty or 0 for a free event</span>
                 </div>

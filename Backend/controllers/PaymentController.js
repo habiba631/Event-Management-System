@@ -22,7 +22,6 @@ async function createCheckoutSession(req, res) {
       return res.status(400).json({ message: "ticketCount must be a positive number" });
     }
 
-    // Only block on non-cancelled existing bookings so expired sessions can be retried
     const existing = await Booking.findOne({ user: userId, event: eventId, status: { $ne: "cancelled" } });
     if (existing) {
       return res.status(409).json({ message: "An active booking already exists for this event" });
@@ -33,7 +32,6 @@ async function createCheckoutSession(req, res) {
       return res.status(400).json({ message: "Not enough seats available for this event" });
     }
 
-    // Create booking in pending state — confirmed only after payment succeeds
     const booking = await Booking.create({
       user: userId,
       event: eventId,
@@ -41,7 +39,7 @@ async function createCheckoutSession(req, res) {
       status: "pending",
     });
 
-    const totalAmount = event.price * count; // in cents
+    const totalAmount = event.price * count; 
 
     const payment = await Payment.create({
       booking: booking._id,
@@ -52,7 +50,6 @@ async function createCheckoutSession(req, res) {
       status: "pending",
     });
 
-    // Free event — confirm immediately without Stripe
     if (totalAmount === 0) {
       await Booking.findByIdAndUpdate(booking._id, { status: "confirmed" });
       await Event.findByIdAndUpdate(eventId, { $inc: { registrations: count } });
@@ -102,7 +99,6 @@ async function createCheckoutSession(req, res) {
   }
 }
 
-// Called by the frontend success page — retrieves from Stripe and confirms/cancels the booking
 async function getSessionStatus(req, res) {
   try {
     const { sessionId } = req.params;
@@ -119,12 +115,10 @@ async function getSessionStatus(req, res) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    // Already resolved — return immediately (idempotent)
     if (payment.status !== "pending") {
       return res.status(200).json(payment);
     }
 
-    // Ask Stripe for the current session state
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status === "paid") {
@@ -153,7 +147,6 @@ async function getSessionStatus(req, res) {
   }
 }
 
-// Called by the frontend cancel page — expires the Stripe session and frees the booking immediately
 async function cancelSession(req, res) {
   try {
     const { sessionId } = req.params;
@@ -171,11 +164,10 @@ async function cancelSession(req, res) {
       return res.status(200).json({ message: "Already resolved" });
     }
 
-    // Expire the session so it cannot be completed later
     try {
       await stripe.checkout.sessions.expire(sessionId);
     } catch {
-      // Session may already be expired — safe to ignore
+     
     }
 
     await Payment.findByIdAndUpdate(payment._id, { status: "cancelled" });

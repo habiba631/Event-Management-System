@@ -72,7 +72,7 @@ const eventSchema = new mongoose.Schema(
     price: {
       type: Number,
       default: 0,
-      min: 0, // price per ticket in cents (e.g. 2000 = $20.00)
+      min: 0, 
     },
   },
   {

@@ -86,11 +86,6 @@ const userSchema = new mongoose.Schema(
       trim: true,
       select: false,
     },
-    phoneNumber: {
-      type: String,
-      trim: true,
-      default: "",
-    },
     gender: {
       type: String,
       enum: ["Male", "Female"],

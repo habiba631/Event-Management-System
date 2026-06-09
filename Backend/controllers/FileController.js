@@ -17,7 +17,7 @@ async function deleteFromGridFS(bucket, idString) {
   try {
     await bucket.delete(new mongoose.Types.ObjectId(idString));
   } catch {
-    // File may not exist; ignore
+    
   }
 }
 

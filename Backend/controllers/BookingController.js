@@ -81,7 +81,7 @@ async function getAllBookings(req, res) {
       if (eventId) filter.event = eventId;
     } else if (req.user.role === "EventOrganizer") {
       if (eventId) {
-        // Verify the requested event belongs to this organizer before exposing attendees
+        
         const event = await Event.findById(eventId);
         if (!event) return res.status(404).json({ message: "Event not found" });
         if (String(event.organizerUser) !== String(req.user._id)) {
@@ -89,11 +89,11 @@ async function getAllBookings(req, res) {
         }
         filter.event = eventId;
       } else {
-        // No event specified — return only the organizer's own personal bookings
+        
         filter.user = req.user._id;
       }
     } else {
-      // Customer: only their own bookings
+     
       filter.user = req.user._id;
       if (eventId) filter.event = eventId;
     }

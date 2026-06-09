@@ -27,7 +27,7 @@ const paymentSchema = new mongoose.Schema(
     },
     amount: {
       type: Number,
-      required: true, // in cents
+      required: true, 
     },
     currency: {
       type: String,
